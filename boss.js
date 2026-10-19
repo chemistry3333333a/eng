@@ -7,17 +7,17 @@
    ===================================================================== */
 (function(){
 const INFO = {
-  10:  {skill:'none',     tip:'첫 보스예요. 침착하게 잘 들어 봐요!',              pet:['🐣','삐약이'],   taunt:["I am the wizard! You can't catch me!",'나는 마법사다! 넌 날 못 잡아!'], rage:["Now I'm angry!",'이제 화났다!']},
-  103: {skill:'web',      tip:'🕸️ 거미줄은 먼저 터치해서 걷어 내요!',             pet:['🐞','무당이'],   taunt:['My web will stop you!','내 거미줄이 널 막을 거야!'], rage:['More webs!','거미줄을 더 쳐 주마!']},
-  104: {skill:'ghost',    tip:'👻 몬스터가 사라졌다 나타나요. 잘 지켜봐요!',       pet:['🦊','꼬리'],     taunt:['Boo! Can you see me?','부! 내가 보이니?'], rage:["Now you see me, now you don't!",'보였다 안 보였다!']},
-  105: {skill:'timer',    tip:'⏳ 시간 막대가 다 차기 전에 맞혀요!',               pet:['🦉','부엉'],     taunt:['Hurry up! Time is running out!','서둘러! 시간이 없어!'], rage:['Faster! Faster!','더 빨리! 더 빨리!']},
-  20:  {skill:'swap',     tip:'🔀 몬스터 자리가 계속 바뀌어요!',                   pet:['🦄','반짝이'],   taunt:["Let's mix them up!",'몽땅 섞어 버리자!'], rage:['Mix, mix, mix!','섞어, 섞어, 섞어!']},
-  106: {skill:'shadow',   tip:'🌑 그림이 그림자로만 보여요!',                      pet:['🦔','고슴이'],   taunt:['Welcome to the dark forest!','어둠의 숲에 온 걸 환영해!'], rage:["It's getting darker!",'점점 어두워진다!']},
-  30:  {skill:'spell',    tip:'🔤 그림 대신 영어 글자를 읽고 골라요!',             pet:['🐬','돌돌이'],   taunt:['Can you read my magic words?','내 마법 글자를 읽을 수 있니?'], rage:['Read faster!','더 빨리 읽어 봐!']},
-  107: {skill:'robot',    tip:'🤖 로봇이 빠르게 말해요. 🐢 버튼을 써도 돼요!',     pet:['🐧','펭펭'],     taunt:['Beep beep! Robot attack!','삐삐! 로봇 공격!'], rage:['Speed up! Beep!','속도 올려! 삐!']},
-  108: {skill:'sentence', tip:'📖 문장 속에 숨은 단어를 찾아 들어요!',             pet:['🐲','용용이'],   taunt:['Listen to my story!','내 이야기를 잘 들어 봐!'], rage:['Listen carefully!','아주 잘 들어!']},
-  109: {skill:'ice',      tip:'🧊 얼어붙은 몬스터는 한 번 눌러 얼음을 깨요!',      pet:['🐻‍❄️','북극이'], taunt:['I will freeze everything!','모든 걸 얼려 버리겠다!'], rage:['Freeze!','얼어라!']},
-  110: {skill:'mix',      tip:'👑 지금까지 나온 모든 기술을 써요!',                pet:['🧚','요정 루미'], taunt:['I am the great wizard! Show me everything!','나는 대마법사! 네 실력을 모두 보여 봐!'], rage:['This is my final magic!','이게 나의 마지막 마법이다!']},
+  10:  {skill:'none',     tip:'첫 보스예요. 침착하게 잘 들어 봐요!',              taunt:["I am the wizard! You can't catch me!",'나는 마법사다! 넌 날 못 잡아!'], rage:["Now I'm angry!",'이제 화났다!']},
+  103: {skill:'web',      tip:'🕸️ 거미줄은 먼저 터치해서 걷어 내요!',             taunt:['My web will stop you!','내 거미줄이 널 막을 거야!'], rage:['More webs!','거미줄을 더 쳐 주마!']},
+  104: {skill:'ghost',    tip:'👻 몬스터가 사라졌다 나타나요. 잘 지켜봐요!',       taunt:['Boo! Can you see me?','부! 내가 보이니?'], rage:["Now you see me, now you don't!",'보였다 안 보였다!']},
+  105: {skill:'timer',    tip:'⏳ 시간 막대가 다 차기 전에 맞혀요!',               taunt:['Hurry up! Time is running out!','서둘러! 시간이 없어!'], rage:['Faster! Faster!','더 빨리! 더 빨리!']},
+  20:  {skill:'swap',     tip:'🔀 몬스터 자리가 계속 바뀌어요!',                   taunt:["Let's mix them up!",'몽땅 섞어 버리자!'], rage:['Mix, mix, mix!','섞어, 섞어, 섞어!']},
+  106: {skill:'shadow',   tip:'🌑 그림이 그림자로만 보여요!',                      taunt:['Welcome to the dark forest!','어둠의 숲에 온 걸 환영해!'], rage:["It's getting darker!",'점점 어두워진다!']},
+  30:  {skill:'spell',    tip:'🔤 그림 대신 영어 글자를 읽고 골라요!',             taunt:['Can you read my magic words?','내 마법 글자를 읽을 수 있니?'], rage:['Read faster!','더 빨리 읽어 봐!']},
+  107: {skill:'robot',    tip:'🤖 로봇이 빠르게 말해요. 🐢 버튼을 써도 돼요!',     taunt:['Beep beep! Robot attack!','삐삐! 로봇 공격!'], rage:['Speed up! Beep!','속도 올려! 삐!']},
+  108: {skill:'sentence', tip:'📖 문장 속에 숨은 단어를 찾아 들어요!',             taunt:['Listen to my story!','내 이야기를 잘 들어 봐!'], rage:['Listen carefully!','아주 잘 들어!']},
+  109: {skill:'ice',      tip:'🧊 얼어붙은 몬스터는 한 번 눌러 얼음을 깨요!',      taunt:['I will freeze everything!','모든 걸 얼려 버리겠다!'], rage:['Freeze!','얼어라!']},
+  110: {skill:'mix',      tip:'👑 지금까지 나온 모든 기술을 써요!',                taunt:['I am the great wizard! Show me everything!','나는 대마법사! 네 실력을 모두 보여 봐!'], rage:['This is my final magic!','이게 나의 마지막 마법이다!']},
 };
 const SKILL_LABEL = {none:'', web:'🕸️ 거미줄', ghost:'👻 투명 마법', timer:'⏳ 시간 제한', swap:'🔀 자리 바꾸기', shadow:'🌑 그림자',
   spell:'🔤 글자 읽기', robot:'🤖 빠른 말', sentence:'📖 문장 듣기', ice:'🧊 얼음'};
@@ -180,7 +180,7 @@ function updateHp(){
   $('hpFill').style.width = w; $('hpLag').style.width = w;
 }
 function renderPet(){
-  const id = S && S.petOn, p = id && INFO[id] && INFO[id].pet;
+  const id = S && S.petOn, p = id && PETS[id];
   pal.innerHTML = p ? p[0] : '';
   pal.style.display = p ? '' : 'none';
 }
@@ -347,7 +347,7 @@ function victory(done){
 
 /* ---------- 보상 ---------- */
 function grantRewards(s, stars){
-  const id = s.stage, inf = INFO[id];
+  const id = s.stage;
   S.trophies = S.trophies || {}; S.pets = S.pets || [];
   const prev = S.trophies[id] || 0;
   S.trophies[id] = Math.max(prev, stars);
@@ -356,7 +356,7 @@ function grantRewards(s, stars){
   const hearts = Math.max(0, s.hearts || 0);
   const coins = 30 + stars * 10 + hearts * 3;
   S.coins += coins; s.coins += coins;
-  return {coins, stars, hearts, trophyUp: stars > prev, newPet, pet: inf.pet, name: bossName(id)};
+  return {coins, stars, hearts, trophyUp: stars > prev, newPet, pet: PETS[id], name: bossName(id)};
 }
 const bossName = id => (STAGES.find(s => s.id === id) || {}).name;
 function rewardHtml(r){
@@ -386,7 +386,7 @@ function showChest(r){
 /* ---------- 펫 ---------- */
 function petCheer(){
   if (!S.petOn || !pal.textContent) return;
-  const p = INFO[S.petOn].pet;
+  const p = PETS[S.petOn];
   pal.innerHTML = `${p[0]}<span class="pb">${PET_TALK[Math.floor(Math.random() * PET_TALK.length)]}</span>`;
   retrigger(pal, 'jump');
   setTimeout(() => { pal.innerHTML = p[0]; pal.classList.remove('jump'); }, 1100);
@@ -397,7 +397,7 @@ function renderTrophies(){
   const g = $('trophyGrid'); g.innerHTML = '';
   let got = 0;
   CHAPTERS.forEach((c, ci) => {
-    const id = c.boss.id, t = (S.trophies || {})[id] || 0, pet = INFO[id].pet, has = (S.pets || []).includes(id);
+    const id = c.boss.id, t = (S.trophies || {})[id] || 0, pet = PETS[id], has = (S.pets || []).includes(id);
     if (t) got++;
     const b = document.createElement('button');
     b.className = 'tcard' + (t ? '' : ' locked') + (S.petOn === id ? ' with' : '');
