@@ -338,6 +338,7 @@ button{font-family:inherit;color:inherit;cursor:pointer;touch-action:manipulatio
 
 <script src="words.js"></script>
 <script src="items.js"></script>
+<script src="avatar.js"></script>
 <script>
 /* ================== 데이터 ================== */
 // 단어 데이터는 words.js 에 있어요 (STAGE_DEFS, CHAPTERS, HOMOPHONES)
@@ -363,7 +364,7 @@ const KEY = 'wordisland_save_v1';
 /* ================== 저장 ================== */
 let S = null;
 function freshSave(name){
-  return {v:1, name, xp:0, coins:0, stages:{}, words:{}, streak:{n:0,last:''}, settings:{rate:0.85}, session:null, parrot:{best:0,played:0}};
+  return Avatar.ensure({v:1, name, xp:0, coins:0, stages:{}, words:{}, streak:{n:0,last:''}, settings:{rate:0.85}, session:null, parrot:{best:0,played:0}});
 }
 function loadSave(){
   try { const raw = localStorage.getItem(KEY); if (raw) return JSON.parse(raw); } catch(e) {}
@@ -451,6 +452,7 @@ function floatText(el, text){
 /* ================== 홈 ================== */
 function renderHome(){
   S = loadSave();
+  if (S) Avatar.ensure(S);
   if (S){
     $('newUser').style.display = 'none'; $('oldUser').style.display = 'flex';
     $('helloTxt').textContent = `안녕, ${S.name}! 🔥 ${S.streak.n}일째 · Lv.${level()}`;
@@ -760,7 +762,7 @@ $('restoreBtn').onclick = () => {
     const data = decodeSave($('backupIn').value);
     if (!data || !data.name || !data.words) throw 0;
     if (!confirm(`'${data.name}'의 기록으로 바꿀까요?`)) return;
-    S = data; save(); $('setModal').classList.remove('on'); renderMap(); toast('복구 완료! ✅');
+    S = Avatar.ensure(data); save(); $('setModal').classList.remove('on'); renderMap(); toast('복구 완료! ✅');
   } catch(e){ toast('코드가 올바르지 않아요 😢'); }
 };
 $('resetBtn').onclick = () => {
