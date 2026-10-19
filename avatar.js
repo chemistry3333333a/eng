@@ -5,6 +5,19 @@
    ===================================================================== */
 (function(){
 const byId = id => ITEMS.find(i => i.id === id);
+// 슬롯별 위치·크기 (몸 이모지 크기 1em 기준. x: 가운데=0, 오른쪽 +, y: 위쪽 기준 아래로 +)
+const LAYOUT = {
+  box:  {w:1.3, h:1.3},                           // 캐릭터 상자 크기
+  body: {x:0,     y:0.12, s:1},
+  back: {x:0,     y:0.12, s:1.15},                // 몸 뒤, 살짝 크게
+  face: {x:0,     y:0.62, s:0.5},                 // 얼굴 중앙
+  hat:  {x:0,     y:-0.4, s:0.6},                 // 머리 위
+  hand: {x:0.6,   y:1.0,  s:0.45},                 // 오른쪽 아래
+  fx:   {x:-0.55, y:0.1,  s:0.35},                 // 몸 옆에서 반짝
+  pet:  {x:1.05,  y:0.85, s:0.5},                // 캐릭터 오른쪽 아래
+};
+const SIZES = {s:56, m:96, l:160};
+const POSE_MS = {cheer:700, hurt:500, attack:450};
 const GIFT_MAX = 30;      // 첫 선물로 고를 수 있는 최대 가격
 const DEAL_RATE = 0.7;    // 오늘의 특가 30% 할인
 const QUIZ_RATE = 0.9;    // 퀴즈 보너스 10% 할인
@@ -110,6 +123,62 @@ function claimGift(id){
   S.avatar.equip[it.slot] = id; S.shop.freeGiven = true; save(); return true;
 }
 
+// ---- 그리기 ----
+let styled = false;
+function injectStyle(){
+  if (styled || typeof document === 'undefined') return;
+  styled = true;
+  const L = LAYOUT, lay = (k, z) => `.av-${k}{z-index:${z};left:calc(50% + ${L[k].x}em);top:${L[k].y}em;font-size:${L[k].s}em;}`;
+  const st = document.createElement('style');
+  st.textContent = `
+.av{position:relative;display:inline-block;vertical-align:middle;width:${L.box.w}em;height:${L.box.h}em;line-height:1;pointer-events:none;user-select:none;flex:none;}
+.av-s{font-size:${SIZES.s}px}.av-m{font-size:${SIZES.m}px}.av-l{font-size:${SIZES.l}px}
+.av>span{position:absolute;transform:translateX(-50%);white-space:nowrap;}
+${lay('body',2)}${lay('back',1)}${lay('face',3)}${lay('hat',4)}${lay('hand',5)}${lay('fx',6)}${lay('pet',2)}
+.av-fx{animation:avTwinkle 1.6s ease-in-out infinite;}
+.av-burst{position:absolute;z-index:7;left:50%;top:40%;font-size:.4em;font-style:normal;animation:avBurst .8s ease-out forwards;}
+.av-idle{animation:avFloat 2s ease-in-out infinite;}
+.av-cheer{animation:avJump .7s ease-out;}
+.av-hurt{animation:avShake .5s linear;}
+.av-attack{animation:avPunch .45s ease-out;}
+@keyframes avFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-.05em)}}
+@keyframes avJump{0%,100%{transform:translateY(0)}40%{transform:translateY(-.3em) scale(1.05)}}
+@keyframes avShake{0%,100%{transform:translateX(0)}20%{transform:translateX(-.07em)}40%{transform:translateX(.07em)}60%{transform:translateX(-.05em)}80%{transform:translateX(.05em)}}
+@keyframes avPunch{0%,100%{transform:translateX(0)}40%{transform:translateX(.25em)}}
+@keyframes avTwinkle{0%,100%{opacity:.5;transform:translateX(-50%) scale(.85)}50%{opacity:1;transform:translateX(-50%) scale(1.1)}}
+@keyframes avBurst{0%{opacity:1;transform:translate(-50%,0) scale(.6)}100%{opacity:0;transform:translate(-50%,-1.4em) scale(1.6)}}`;
+  document.head.appendChild(st);
+}
+function render(el, {size = 'm', pose = 'idle', pet = false, preview = null, body = null} = {}){
+  injectStyle();
+  if (!SIZES[size]) size = 'm';
+  const eq = {...S.avatar.equip, ...(preview || {})};
+  const b = BODIES.find(x => x.id === (body || S.avatar.body)) || BODIES[0];
+  const layer = (cls, ch) => ch ? `<span class="av-${cls}">${ch}</span>` : '';
+  const slotIcon = sl => { const it = byId(eq[sl]); return it && it.slot === sl ? it.icon : ''; };
+  const p = pet && PETS[S.petOn];
+  el.innerHTML = `<div class="av av-${size} av-${pose}">` +
+    layer('back', slotIcon('back')) + layer('body', b.icon) + layer('face', slotIcon('face')) +
+    layer('hat', slotIcon('hat')) + layer('hand', slotIcon('hand')) + layer('fx', slotIcon('effect')) +
+    layer('pet', p ? p[0] : '') + `</div>`;
+}
+// 자세 애니메이션을 한 번 재생하고 idle 로 돌아와요
+function react(el, kind){
+  const root = el && el.querySelector('.av');
+  if (!root || !POSE_MS[kind]) return;
+  const sz = [...root.classList].find(c => /^av-[sml]$/.test(c));
+  clearTimeout(root._avT);
+  root.className = `av ${sz}`; void root.offsetWidth;   // 애니메이션 재시작
+  root.classList.add('av-' + kind);
+  const it = byId(S.avatar.equip.effect);
+  if (kind === 'cheer' && it){
+    const o = document.createElement('i');
+    o.className = 'av-burst'; o.textContent = it.icon;
+    root.appendChild(o); setTimeout(() => o.remove(), 850);
+  }
+  root._avT = setTimeout(() => { root.classList.remove('av-' + kind); root.classList.add('av-idle'); }, POSE_MS[kind]);
+}
+
 window.Avatar = {ensure, item: byId, owns, isUnlocked, lockText, deal, priceOf, canBuy, buy,
-  equip, unequip, setBody, equipped, perks, giftChoices, claimGift};
+  equip, unequip, setBody, equipped, perks, giftChoices, claimGift, render, react};
 })();

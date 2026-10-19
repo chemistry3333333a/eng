@@ -52,7 +52,7 @@ button{font-family:inherit;color:inherit;cursor:pointer;touch-action:manipulatio
 
 /* ---------- Map ---------- */
 .mapbar{display:flex;align-items:center;gap:12px;background:#ffffffcc;border-radius:24px;padding:10px 14px;flex-wrap:wrap;}
-.mapbar .who{font-size:24px;flex:1;min-width:140px;}
+.mapbar .who{font-size:24px;flex:1;min-width:140px;display:flex;align-items:center;gap:6px;}
 .lvl{display:flex;flex-direction:column;gap:4px;min-width:150px;flex:1;}
 .lvl small{font-size:16px;color:var(--muted);}
 .xpbar{height:14px;background:#e2e8f0;border-radius:9px;overflow:hidden;}
@@ -227,7 +227,7 @@ button{font-family:inherit;color:inherit;cursor:pointer;touch-action:manipulatio
 <!-- 지도 -->
 <section id="map" class="screen">
   <div class="mapbar">
-    <div class="who" id="whoTxt"></div>
+    <div class="who"><span id="whoAv" style="cursor:pointer"></span><span id="whoTxt"></span></div>
     <div class="lvl"><small id="lvlTxt"></small><div class="xpbar"><i id="xpFill"></i></div></div>
     <div class="pill" id="coinTxt"></div>
     <div class="pill" id="streakTxt"></div>
@@ -478,7 +478,9 @@ $('continueBtn').onclick = () => {
 
 /* ================== 지도 ================== */
 function renderMap(){
-  $('whoTxt').textContent = `🧒 ${S.name}`;
+  $('whoTxt').textContent = S.name;
+  Avatar.render($('whoAv'), {size:'s'});
+  $('whoAv').onclick = () => window.Shop && Shop.open('body');
   $('lvlTxt').textContent = `Lv.${level()} · 다음 레벨까지 ${100 - S.xp % 100} XP`;
   $('xpFill').style.width = (S.xp % 100) + '%';
   $('coinTxt').textContent = `🪙 ${S.coins}`;
