@@ -76,6 +76,8 @@ button{font-family:inherit;color:inherit;cursor:pointer;touch-action:manipulatio
 
 /* ---------- Game ---------- */
 #game{gap:8px;}
+.avcorner{position:absolute;left:14px;bottom:14px;z-index:5;pointer-events:none;}
+#avRes,#avPRes{text-align:center;}
 .topbar{display:flex;align-items:center;gap:12px;}
 .dots{flex:1;display:flex;gap:6px;justify-content:center;flex-wrap:wrap;}
 .dots i{width:18px;height:18px;border-radius:50%;background:#ffffff99;border:3px solid #fff;}
@@ -259,6 +261,7 @@ button{font-family:inherit;color:inherit;cursor:pointer;touch-action:manipulatio
 
 <!-- 앵무새탐정 -->
 <section id="parrot" class="screen">
+  <div id="avPar" class="avcorner"></div>
   <div class="topbar">
     <button class="icon" id="pQuit" aria-label="나가기">🏠</button>
     <div class="dots" id="pDots"></div>
@@ -281,6 +284,7 @@ button{font-family:inherit;color:inherit;cursor:pointer;touch-action:manipulatio
 
 <section id="pResult" class="screen">
   <div class="panel">
+    <div id="avPRes"></div>
     <h2 id="prTitle"></h2>
     <div class="bigstars" id="prStars"></div>
     <div class="rstats" id="prStats"></div>
@@ -294,6 +298,7 @@ button{font-family:inherit;color:inherit;cursor:pointer;touch-action:manipulatio
 <!-- 결과 -->
 <section id="result" class="screen">
   <div class="panel">
+    <div id="avRes"></div>
     <h2 id="rTitle"></h2>
     <div class="bigstars" id="rStars"></div>
     <div class="rstats" id="rStats"></div>
@@ -566,6 +571,7 @@ function resumeGame(){
   const isBoss = ses.stage !== 'review' && STAGES.find(s=>s.id===ses.stage).boss;
   $('bossRow').classList.toggle('on', !!isBoss);
   if (window.Boss) Boss.reset();
+  if ($('avPal')) Avatar.render($('avPal'), {size:'s', pet:true});   // 스테이지에서도 꾸민 캐릭터
   show('game');
   if (isBoss && window.Boss){ Boss.enter(nextQuestion); return; }   // 보스 등장 장면 → 도전 버튼 → 첫 문제
   nextQuestion();
@@ -642,6 +648,7 @@ function tapMonster(el){
     floatText(el, `+${pts}`);
     if (bossOn()) Boss.onCorrect(el, {first, fast, combo:ses.combo, last: ses.i >= ses.queue.length});
     if (window.Boss) Boss.petCheer();
+    Avatar.react($('avPal'), 'cheer');
     const info = WORDS[Q.target];
     $('status').innerHTML = `<span class="answer">${info.e} <b>${info.w}</b> = ${info.k}</span>` +
       (first && ses.combo >= 2 ? `<span class="combo">🔥 ${ses.combo} 콤보!</span>` : '');
@@ -653,7 +660,7 @@ function tapMonster(el){
     Q.tries++;
     if (Q.tries === 1){ st.wrong++; save(); }
     ses.combo = 0;
-    sfxBad();
+    sfxBad(); Avatar.react($('avPal'), 'hurt');
     if (bossOn()) Boss.onWrong();   // 보스의 반격 (하트 -1)
     el.classList.remove('wrong'); void el.offsetWidth; el.classList.add('wrong');
     const tw = Q.target;
@@ -692,6 +699,7 @@ function finishStage(){
   if (window.Boss) Boss.reset();
 
   const bossSt = isBoss && STAGES.find(s=>s.id===ses.stage);
+  Avatar.render($('avRes'), {size:'m', pose:'cheer', pet:true});
   $('rTitle').textContent = isBoss ? `${bossSt.icon} ${bossSt.name} 클리어!` : ses.stage === 'review' ? '🔁 복습 완료!' : stars === 3 ? '완벽해요! 🎉' : '스테이지 클리어! 🎉';
   $('rStars').innerHTML = [0,1,2].map(i => `<span>${i < stars ? '⭐' : '☆'}</span>`).join('');
   $('rStats').innerHTML = `<span class="pill">🎯 한 번에 ${ses.first}/${ses.queue.length}</span>
@@ -850,6 +858,7 @@ function startParrot(){
     prev.o = cs.o; prev.c = cs.c; prev.t = cs.tid; cases.push(cs);
   }
   P = {double:pl.double, i:0, score:0, first:0, combo:0, maxCombo:0, coins:0, marks:[], cases, titles:shuffle(CASE_TITLES), tries:0, locked:false, t0:0};
+  Avatar.render($('avPar'), {size:'s', pet:true});
   show('parrot');
   nextCase();
 }
@@ -897,7 +906,7 @@ function tapCard(el){
     P.score += pts; S.xp += xp; P.coins += coin; S.coins += coin;
     P.marks[P.i] = first; P.i++;
     save();
-    sfxGood(); el.classList.add('right'); floatText(el, `+${pts}`);
+    sfxGood(); Avatar.react($('avPar'), 'cheer'); el.classList.add('right'); floatText(el, `+${pts}`);
     $('pStatus').innerHTML = `<span class="combo">Case closed! 🔎</span>` + (first && P.combo >= 2 ? `<span class="combo">🔥 ${P.combo}</span>` : '') + reveal();
     setTimeout(() => speak('Case closed!'), 250);
     if (level() > lvBefore) setTimeout(() => { toast(`🎉 레벨 업! Lv.${level()}`, 2000); sfxWin(); }, 600);
@@ -906,7 +915,7 @@ function tapCard(el){
   } else {
     P.tries++;
     if (P.tries === 1) sts.forEach(st => { st.wrong++; });
-    P.combo = 0; sfxBad();
+    P.combo = 0; sfxBad(); Avatar.react($('avPar'), 'hurt');
     el.classList.remove('wrong'); void el.offsetWidth; el.classList.add('wrong'); setTimeout(() => el.classList.add('out'), 450);
     if (P.tries >= 2){                       // 두 번 틀리면 정답을 알려 주고 다음 사건으로
       P.locked = true;
@@ -937,6 +946,7 @@ function finishParrot(){
     <span class="pill">⭐ ${P.score}점</span><span class="pill">🔥 최고 ${P.maxCombo}콤보</span>
     <span class="pill">🪙 +${P.coins}</span><span class="pill">🏆 최고 ${S.parrot.best}점</span>`;
   P = null;
+  Avatar.render($('avPRes'), {size:'m', pose:'cheer', pet:true});
   show('pResult'); sfxWin();
   setTimeout(() => speak(stars === 3 ? 'Perfect! You are amazing!' : 'Great job!'), 500);
 }

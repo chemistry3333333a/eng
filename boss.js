@@ -90,9 +90,8 @@ const css = `
 .bx-rew{display:flex;flex-direction:column;gap:10px;font-size:26px;}
 .bx-rew div{background:#ffffff22;border-radius:16px;padding:8px 18px;animation:pop .4s backwards;}
 .bx-rew div:nth-child(2){animation-delay:.3s} .bx-rew div:nth-child(3){animation-delay:.6s} .bx-rew div:nth-child(4){animation-delay:.9s}
-#petPal{position:absolute;left:14px;bottom:14px;font-size:56px;z-index:5;animation:bob 2s infinite;pointer-events:none;}
-#petPal.jump{animation:bxJump .6s;}
-#petPal .pb{position:absolute;left:58px;top:-6px;background:#fff;border-radius:12px;padding:2px 10px;font-size:18px;white-space:nowrap;color:#1e293b;}
+#avPal{position:absolute;left:14px;bottom:14px;z-index:5;pointer-events:none;}
+#avPal .av-pet .pb{position:absolute;left:50%;bottom:100%;transform:translateX(-50%);background:#fff;border-radius:12px;padding:2px 10px;font-size:18px;white-space:nowrap;color:#1e293b;}
 #trophy{align-items:center;}
 .tgrid{flex:1;width:100%;overflow-y:auto;-webkit-overflow-scrolling:touch;display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:14px;padding:16px 2px;align-content:start;}
 .tcard{border:0;background:#fff;border-radius:22px;padding:12px 8px;display:flex;flex-direction:column;align-items:center;gap:4px;box-shadow:0 6px 0 rgba(0,0,0,.1);position:relative;}
@@ -123,7 +122,7 @@ $('bossRow').innerHTML = `<span class="bx-face" id="bossFace">🧙</span>
     <div class="bx-charge" id="bxCharge"><i></i></div>
   </div>
   <div class="bx-hearts" id="bxHearts"></div>`;
-const pal = document.createElement('div'); pal.id = 'petPal'; $('game').appendChild(pal);
+const pal = document.createElement('div'); pal.id = 'avPal'; $('game').appendChild(pal);
 
 const room = document.createElement('section');
 room.id = 'trophy'; room.className = 'screen';
@@ -180,9 +179,7 @@ function updateHp(){
   $('hpFill').style.width = w; $('hpLag').style.width = w;
 }
 function renderPet(){
-  const id = S && S.petOn, p = id && PETS[id];
-  pal.innerHTML = p ? p[0] : '';
-  pal.style.display = p ? '' : 'none';
+  Avatar.render(pal, {size:'s', pet:true});   // 꾸민 캐릭터 + 고른 펫
 }
 
 /* ---------- 등장 ---------- */
@@ -317,7 +314,7 @@ function attack(){
   setTimeout(() => {
     shake(); boom();
     const f = document.createElement('div'); f.className = 'bx-flash'; document.body.appendChild(f); setTimeout(() => f.remove(), 700);
-    s.hearts--;
+    s.hearts--; Avatar.react(pal, 'hurt');
     if (s.hearts <= 0 && !s.revived){            // 게임오버 대신 요정이 한 번 살려 줘요
       s.hearts = 3; s.revived = true;
       setTimeout(() => toast('🧚 요정이 하트를 채워 줬어요! 포기하지 마!', 2200), 300);
@@ -385,11 +382,14 @@ function showChest(r){
 
 /* ---------- 펫 ---------- */
 function petCheer(){
-  if (!S.petOn || !pal.textContent) return;
-  const p = PETS[S.petOn];
-  pal.innerHTML = `${p[0]}<span class="pb">${PET_TALK[Math.floor(Math.random() * PET_TALK.length)]}</span>`;
-  retrigger(pal, 'jump');
-  setTimeout(() => { pal.innerHTML = p[0]; pal.classList.remove('jump'); }, 1100);
+  const pet = S.petOn && pal.querySelector('.av-pet');
+  if (!pet) return;
+  const old = pet.querySelector('.pb'); if (old) old.remove();
+  const b = document.createElement('span'); b.className = 'pb';
+  b.textContent = PET_TALK[Math.floor(Math.random() * PET_TALK.length)];
+  pet.appendChild(b);
+  pet.animate([{transform:'translateX(-50%)'}, {transform:'translateX(-50%) translateY(-.6em) rotate(-10deg)', offset:.4}, {transform:'translateX(-50%)'}], 600);
+  setTimeout(() => b.remove(), 1100);
 }
 
 /* ---------- 트로피 방 ---------- */
