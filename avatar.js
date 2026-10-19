@@ -132,6 +132,7 @@ function injectStyle(){
   const st = document.createElement('style');
   st.textContent = `
 .av{position:relative;display:inline-block;vertical-align:middle;width:${L.box.w}em;height:${L.box.h}em;line-height:1;pointer-events:none;user-select:none;flex:none;}
+.av-haspet{margin-right:.7em;}   /* 펫이 상자 밖으로 나오니 자리를 확보 */
 .av-s{font-size:${SIZES.s}px}.av-m{font-size:${SIZES.m}px}.av-l{font-size:${SIZES.l}px}
 .av>span{position:absolute;transform:translateX(-50%);white-space:nowrap;}
 ${lay('body',2)}${lay('back',1)}${lay('face',3)}${lay('hat',4)}${lay('hand',5)}${lay('fx',6)}${lay('pet',2)}
@@ -157,7 +158,7 @@ function render(el, {size = 'm', pose = 'idle', pet = false, preview = null, bod
   const layer = (cls, ch) => ch ? `<span class="av-${cls}">${ch}</span>` : '';
   const slotIcon = sl => { const it = byId(eq[sl]); return it && it.slot === sl ? it.icon : ''; };
   const p = pet && PETS[S.petOn];
-  el.innerHTML = `<div class="av av-${size} av-${pose}">` +
+  el.innerHTML = `<div class="av av-${size} av-${pose}${p ? ' av-haspet' : ''}">` +
     layer('back', slotIcon('back')) + layer('body', b.icon) + layer('face', slotIcon('face')) +
     layer('hat', slotIcon('hat')) + layer('hand', slotIcon('hand')) + layer('fx', slotIcon('effect')) +
     layer('pet', p ? p[0] : '') + `</div>`;
@@ -168,7 +169,7 @@ function react(el, kind){
   if (!root || !POSE_MS[kind]) return;
   const sz = [...root.classList].find(c => /^av-[sml]$/.test(c));
   clearTimeout(root._avT);
-  root.className = `av ${sz}`; void root.offsetWidth;   // 애니메이션 재시작
+  root.className = `av ${sz}${root.classList.contains('av-haspet') ? ' av-haspet' : ''}`; void root.offsetWidth;   // 애니메이션 재시작
   root.classList.add('av-' + kind);
   const it = byId(S.avatar.equip.effect);
   if (kind === 'cheer' && it){
