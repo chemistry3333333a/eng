@@ -660,7 +660,7 @@ function tapMonster(el){
     Q.tries++;
     if (Q.tries === 1){ st.wrong++; save(); }
     ses.combo = 0;
-    sfxBad(); Avatar.react($('avPal'), 'hurt');
+    sfxBad(); if (!bossOn()) Avatar.react($('avPal'), 'hurt');   // 보스전은 boss.js 가 흔들어요
     if (bossOn()) Boss.onWrong();   // 보스의 반격 (하트 -1)
     el.classList.remove('wrong'); void el.offsetWidth; el.classList.add('wrong');
     const tw = Q.target;

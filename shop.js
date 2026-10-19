@@ -33,6 +33,18 @@ const css = `
 #shop .sp-bar .btn{flex:1;max-width:420px;font-size:22px;padding:14px 12px;}
 #shop .sp-bar .btn:disabled{opacity:.55;box-shadow:none;transform:none;}
 #shop .sp-bar .hint{font-size:20px;color:#475569;}
+/* 가로 폰(낮은 화면): 미리보기를 줄여 아이템 칸에 자리를 줘요 */
+@media (max-height:500px){
+#shop{gap:4px;padding:6px 16px;}
+#shop .sp-top h2{font-size:22px;}
+#shop .sp-top .icon{width:40px;height:40px;font-size:20px;}
+#shop .sp-prev{height:84px;border-radius:20px;}
+#shop .sp-prev .av-l{font-size:60px;}
+#shop .sp-tab{padding:3px 2px;font-size:13px;}
+#shop .sp-tab b{font-size:18px;}
+#shop .sp-bar{min-height:44px;}
+#shop .sp-bar .btn{font-size:18px;padding:6px 12px;}
+}
 #shopModal .row{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;}
 #shopModal .pv{height:150px;display:flex;align-items:center;justify-content:center;}
 #shopModal .opt{border:3px solid transparent;border-radius:20px;background:#f1f5f9;padding:8px 14px;box-shadow:0 4px 0 rgba(0,0,0,.1);font-size:48px;line-height:1.2;}

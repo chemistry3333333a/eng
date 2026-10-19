@@ -29,13 +29,13 @@ test('ensure fills defaults on an old save and keeps existing fields', () => {
   assert.deepEqual(S.owned, []); assert.deepEqual(S.shop, {freeGiven:false, dealDay:'', dealId:''});
   assert.equal(S.coins, 50); assert.equal(S.petOn, 10); assert.deepEqual(S.stages, {1:{stars:2}});
 });
-test('ensure drops unknown ids and unowned equips', () => {
+test('ensure keeps unknown owned ids but nulls bad equips', () => {
   const {S, Avatar, cheap, ITEMS} = mk();
   S.owned = ['nope', cheap.id]; S.avatar.equip.hat = 'nope'; S.avatar.body = 'alien';
   const other = ITEMS.find(i => i.slot === 'face');
   S.avatar.equip.face = other.id; // 소유하지 않은 아이템
   Avatar.ensure(S);
-  assert.deepEqual(S.owned, [cheap.id]); assert.equal(S.avatar.equip.hat, null);
+  assert.deepEqual(S.owned, ['nope', cheap.id]); assert.equal(S.avatar.equip.hat, null);
   assert.equal(S.avatar.equip.face, null); assert.equal(S.avatar.body, 'kid1');
 });
 test('buy deducts once; buying twice is rejected', () => {
@@ -126,4 +126,11 @@ test('gift rejects non-candidates', () => {
   const {Avatar, ITEMS} = mk();
   const pricey = ITEMS.find(i => i.price > 30);
   assert.equal(Avatar.claimGift(pricey.id), false);
+});
+test('giftChoices excludes owned and locked; claimGift rejects them', () => {
+  const {S, Avatar} = mk();
+  const g = Avatar.giftChoices()[0];
+  S.owned.push(g.id);
+  assert.ok(!Avatar.giftChoices().some(i => i.id === g.id));
+  assert.equal(Avatar.claimGift(g.id), false); assert.equal(S.shop.freeGiven, false);
 });
