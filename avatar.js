@@ -46,6 +46,8 @@ const owns = id => S.owned.includes(id);
 
 // 보스를 한 번이라도 이긴(별>0) 수 / 본 적 있는 단어 수
 const trophyCount = () => Object.values(S.trophies || {}).filter(v => v > 0).length;
+// 수학 섬 보스를 이긴 수 (S.math 가 아직 없어도 안전)
+const mathTrophyCount = () => Object.values((S.math && S.math.trophies) || {}).filter(v => v > 0).length;
 const dexCount = () => Object.values(S.words || {}).filter(w => w && w.seen > 0).length;
 
 function isUnlocked(it){
@@ -54,6 +56,7 @@ function isUnlocked(it){
   if (u.level) return level() >= u.level;
   if (u.trophies) return trophyCount() >= u.trophies;
   if (u.dex) return dexCount() >= u.dex;
+  if (u.mathTrophies) return mathTrophyCount() >= u.mathTrophies;
   return true;
 }
 function lockText(it){
@@ -61,6 +64,7 @@ function lockText(it){
   const u = it.unlock;
   if (u.level) return `레벨 ${u.level} 필요`;
   if (u.trophies) return `보스 ${u.trophies}마리 물리치기`;
+  if (u.mathTrophies) return `수학 보스 ${u.mathTrophies}마리 물리치기`;
   return `몬스터 ${u.dex}마리 잡기`;
 }
 
@@ -69,12 +73,18 @@ function deal(){
   const sh = S.shop;
   let it = byId(sh.dealId);
   if (sh.dealDay !== today() || !it || owns(it.id) || !isUnlocked(it)){
-    const pool = ITEMS.filter(i => isUnlocked(i) && !owns(i.id));
+    const pool = ITEMS.filter(i => i.cur === 'eng' && isUnlocked(i) && !owns(i.id));
     it = pool.length ? pool[Math.floor(Math.random() * pool.length)] : null;
     const id = it ? it.id : '', day = today();
     if (sh.dealId !== id || sh.dealDay !== day){ sh.dealId = id; sh.dealDay = day; save(); }
   }
   return it ? {id: it.id, price: Math.ceil(it.price * DEAL_RATE)} : null;
+}
+
+// 아이템이 쓰는 지갑: 영어 코인(S.coins) 또는 수학 💎(S.math.coins)
+function wallet(id){
+  const it = byId(id), cur = it && it.cur === 'math' ? 'math' : 'eng';
+  return {cur, coins: cur === 'math' ? ((S.math && S.math.coins) || 0) : S.coins};
 }
 
 function priceOf(id, {quiz = false} = {}){
@@ -89,12 +99,15 @@ function canBuy(id, opts){
   if (owns(id)) return {ok:false, reason:'owned'};
   if (!isUnlocked(it)) return {ok:false, reason:'locked'};
   const price = priceOf(id, opts);
-  if (S.coins < price) return {ok:false, reason:'coins', need: price - S.coins};
+  const have = wallet(id).coins;
+  if (have < price) return {ok:false, reason:'coins', need: price - have};
   return {ok:true, price};
 }
 function buy(id, opts){
   const r = canBuy(id, opts);
-  if (r.ok){ S.coins -= r.price; S.owned.push(id); save(); }
+  if (r.ok){
+    if (wallet(id).cur === 'math') S.math.coins -= r.price; else S.coins -= r.price;
+    S.owned.push(id); save(); }
   return r;
 }
 
@@ -115,7 +128,7 @@ const equipped = () => ({...S.avatar.equip});
 const perks = () => Object.values(S.avatar.equip).map(byId).filter(i => i && i.perk).map(i => i.perk);
 
 // 첫 선물: 싼 아이템 중 하나를 공짜로 (딱 한 번)
-const giftChoices = () => ITEMS.filter(i => i.price <= GIFT_MAX && !owns(i.id) && isUnlocked(i));
+const giftChoices = () => ITEMS.filter(i => i.cur === 'eng' && i.price <= GIFT_MAX && !owns(i.id) && isUnlocked(i));
 function claimGift(id){
   const it = giftChoices().find(i => i.id === id);
   if (S.shop.freeGiven || !it) return false;
@@ -180,6 +193,6 @@ function react(el, kind){
   root._avT = setTimeout(() => { root.classList.remove('av-' + kind); root.classList.add('av-idle'); }, POSE_MS[kind]);
 }
 
-window.Avatar = {ensure, item: byId, owns, isUnlocked, lockText, deal, priceOf, canBuy, buy,
+window.Avatar = {ensure, item: byId, owns, isUnlocked, lockText, wallet, deal, priceOf, canBuy, buy,
   equip, unequip, setBody, equipped, perks, giftChoices, claimGift, render, react};
 })();

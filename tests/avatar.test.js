@@ -5,14 +5,14 @@ const vm = require('vm');
 // 매 테스트마다 새 컨텍스트: lv 는 1 에서 시작해 레벨 잠금이 실제로 잠겨 있게 해요
 function mk(opts = {}) {
   const env = {day: '2026-1-1', lv: 1, saves: 0};
-  const S = {coins: 0, stages: {}, words: {}, trophies: {}, pets: []};
+  const S = {coins: 0, stages: {}, words: {}, trophies: {}, pets: [], math: {coins: 0, trophies: {}}};
   const ctx = load(['items.js', 'avatar.js'], {S, save() { env.saves++; }, today: () => env.day, level: () => env.lv});
   const Avatar = ctx.Avatar;
   const ITEMS = vm.runInContext('ITEMS', ctx);
   Avatar.ensure(S);
-  const unlocked = ITEMS.filter(i => !i.unlock).sort((a, b) => a.price - b.price);
+  const unlocked = ITEMS.filter(i => i.cur === 'eng' && !i.unlock).sort((a, b) => a.price - b.price);
   const cheap = unlocked[0];
-  const lockedLv = ITEMS.find(i => i.unlock && i.unlock.level);
+  const lockedLv = ITEMS.find(i => i.cur === 'eng' && i.unlock && i.unlock.level);
   // 특가(30% 할인)가 가격 계산에 끼어들지 않도록 다른 아이템으로 고정
   if (opts.pinDeal !== false) {
     S.shop.dealDay = env.day;
@@ -134,3 +134,44 @@ test('giftChoices excludes owned and locked; claimGift rejects them', () => {
   assert.ok(!Avatar.giftChoices().some(i => i.id === g.id));
   assert.equal(Avatar.claimGift(g.id), false); assert.equal(S.shop.freeGiven, false);
 });
+
+test('math items spend math coins only', () => {
+  const {S, Avatar, ITEMS} = mk(); const m = ITEMS.find(i => i.id === 'm_ruler');
+  S.coins = 1000; S.math.coins = 10;
+  assert.deepEqual(Avatar.canBuy(m.id), {ok:false, reason:'coins', need:30});
+  S.math.coins = 40; assert.ok(Avatar.buy(m.id).ok); assert.equal(S.math.coins, 0); assert.equal(S.coins, 1000);
+  assert.deepEqual(Avatar.wallet(m.id), {cur:'math', coins:0});
+});
+test('English items still spend English coins', () => {
+  const {S, Avatar, cheap} = mk();
+  S.coins = 100; S.math.coins = 100;
+  const p = Avatar.priceOf(cheap.id);
+  assert.ok(Avatar.buy(cheap.id).ok);
+  assert.equal(S.coins, 100 - p); assert.equal(S.math.coins, 100);
+  assert.deepEqual(Avatar.wallet(cheap.id), {cur:'eng', coins:100 - p});
+});
+test('gift and deal never offer math items', () => {
+  const {Avatar, env} = mk({pinDeal: false});
+  assert.ok(Avatar.giftChoices().every(i => i.cur === 'eng'));
+  for (let d = 1; d <= 30; d++) {
+    env.day = '2027-1-' + d;
+    assert.equal(Avatar.item(Avatar.deal().id).cur, 'eng');
+  }
+});
+test('mathTrophies unlock counts only S.math.trophies', () => {
+  const {S, Avatar} = mk(); const it = Avatar.item('m_abacus');
+  S.trophies = {10:3, 103:3}; assert.ok(!Avatar.isUnlocked(it));
+  assert.equal(Avatar.lockText(it), '수학 보스 1마리 물리치기');
+  S.math.trophies = {'m-frB':1}; assert.ok(Avatar.isUnlocked(it));
+});
+test('Avatar tolerates a missing S.math', () => {
+  const {S, Avatar} = mk(); delete S.math;
+  assert.equal(Avatar.wallet('m_ruler').coins, 0);
+  assert.ok(!Avatar.isUnlocked(Avatar.item('m_abacus')));
+  assert.equal(Avatar.canBuy('m_ruler').ok, false);
+});
+test('quiz discount is 10% for math items too', () => {
+  const {Avatar} = mk();
+  assert.equal(Avatar.priceOf('m_ruler', {quiz:true}), 36);
+});
+test('every item has cur eng or math', () => { const {ITEMS} = mk(); ITEMS.forEach(i => assert.ok(['eng','math'].includes(i.cur))); });
