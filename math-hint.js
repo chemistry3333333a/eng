@@ -3,6 +3,7 @@
    - MathHint.ask(container, {wrong, onHint, onRetry}) : "힌트 볼래? 혼자 다시 할래?"
    - MathHint.run(container, p, wrongPick, onDone)    : MathCore.hintPlan(p) 단계를 블록으로 진행
    - 화면은 container 안에만 그려요. CSS 는 boss.js 처럼 여기서 주입 (분수 .mf/.md/.mx 도 여기서 정의)
+   - 끌 때 복제본(ghost)은 position:fixed 가 되도록 document.body 에 붙이고, 놓거나 새 힌트를 띄우면 지워요
    - 블록: 판 1장 = 1, 막대 1개 = 0.1, 작은 칸 1개 = 0.01, 분수는 분모만큼 칸이 있는 틀
    ===================================================================== */
 (() => {
@@ -58,11 +59,11 @@ const css = `
 .mh-board{width:118px;height:118px;border-radius:8px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;
   font-size:34px;font-weight:900;color:#fff;text-shadow:0 2px 0 rgba(0,0,0,.2);flex:none;}
 .mh-board.mh-sm{width:64px;height:64px;font-size:22px;}
-.mh-B{background:#54a0ff;} .mh-O{background:#ff9f43;} .mh-G{background:#2ecc71;} .mh-Y{background:#ffd43b;}
+.mh-B{background:#54a0ff;} .mh-O{background:#ff9f43;} .mh-G{background:#2ecc71;} .mh-Y{background:#ffe066;}
 .mh-board.mh-B{background:repeating-linear-gradient(90deg,#54a0ff 0 10px,#3d8be6 10px 12px);}
 .mh-board.mh-O{background:repeating-linear-gradient(90deg,#ff9f43 0 10px,#e88a2c 10px 12px);}
 .mh-board.mh-G{background:repeating-linear-gradient(90deg,#2ecc71 0 10px,#25b263 10px 12px);}
-.mh-board.mh-Y{background:repeating-linear-gradient(90deg,#ffd43b 0 10px,#fab005 10px 12px);color:#8a5a00;text-shadow:none;}
+.mh-board.mh-Y{background:repeating-linear-gradient(90deg,#ffe066 0 10px,#fcc419 10px 12px);color:#8a5a00;text-shadow:none;}
 .mh-dots{display:grid;grid-template-columns:repeat(5,14px);gap:4px;}
 .mh-dot{width:14px;height:14px;border-radius:3px;box-shadow:inset 0 -2px 0 rgba(0,0,0,.15);}
 .mh-tap{cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;animation:mhWiggle 1.2s infinite;}
@@ -311,7 +312,7 @@ function run(container, p, wrongPick, onDone){
   const W = plan.whole;
   const Lc = W ? plan.afterWhole : plan.L, Rr = W ? MathCore.sub(plan.R, W) : plan.R;
   const pN = pcs(plan.need);
-  let i = 0, busy = false, sk = 0, popNow = false;
+  let i = 0, busy = false, sk = 0, popNow = false, backTimer = null, backGhost = null;
 
   // 지금 단계에서 쪼개기 장면이 있나 (break 의 끌기, down 의 마지막)
   const splitSeq = () => kind === 'break' && roles[i] === 'drag' ? splits(pcs(Lc), pN, d)
@@ -337,7 +338,7 @@ function run(container, p, wrongPick, onDone){
         const fr = frameH(fk, [[pick(pL), 'B'], moved && [pick(pN), 'G', jm]], fd ? d : 10, {blink:!moved, full:moved, drop:true});
         body = boardsH(pL.b, 'B', {sm:pL.b >= 3}) + (!fd && u === 1 ? barsH(pL.t, 'B') : '') + fr + (!fd && u === 10 ? sqH(pL.s, 'B') : '');
         left = boxH(`<span class="cb">${desc(pL, u, fd)}</span>`, body,
-          moved ? `<span class="cr${jm ? ' mh-pop' : ''}" style="display:inline-block">${H(plan.made)}</span>` : `<span class="cb">${H(plan.L)}</span>`);
+          moved ? `<span class="cr${jm ? ' mh-pop' : ''}" style="display:inline-block">${fd || u === 10 ? '1' : '0.1'}</span>` : `<span class="cb">${H(plan.L)}</span>`);
       }
       const pR = pcs(plan.R);
       if (!moved){
@@ -372,7 +373,7 @@ function run(container, p, wrongPick, onDone){
         if (moved){
           pc = pcs(plan.made);
           if (r === 'final') stage(splits(pc, pcs(plan.rest), d));
-          else if (r === 'end'){ const seq = splits(pc, pcs(plan.rest), d); pc = seq[seq.length - 1]; }
+          else if (r === 'end'){ const seq = splits(pc, pcs(plan.rest), d); pc = minus(seq[seq.length - 1], pcs(plan.rest)); }
         } else if (r === 'drag') bun = true;
       }
       const plain = bun ? minus(pc, pN) : pc;
@@ -386,7 +387,7 @@ function run(container, p, wrongPick, onDone){
           + (showF ? frameH('cell', [[plain.c, 'B', popT || wp]], Math.max(d, plain.c + ghost), {ghost}) : '');
       } else body = loose(plain, 'B', {split:mark, popT, popS, pop:wp});
       if (bun) body += bundleH(loose(pN, 'B', {sm:true}), H(plan.need), dragNow);
-      const lcap = !moved ? '' : kind === 'down' && madeDone ? `= <span class="cr">${H(plan.made)}</span>` : '= ?';
+      const lcap = !moved ? '' : kind === 'down' && madeDone && r !== 'end' ? `= <span class="cr">${H(plan.made)}</span>` : '= ?';
       left = boxH(moved ? `<span class="cb">${H(L0)}</span>에서 남은 것` : `<span class="cb">${H(L0)}</span>`, body || '<span class="mh-none">0</span>',
         mark ? '<small>✂️ 쪼개는 중…</small>' : lcap);
       const hint = '<small>✋ 묶음을 여기로 끌어내!</small>';
@@ -454,7 +455,7 @@ function run(container, p, wrongPick, onDone){
     if (r === 'whole') return `🔎 판(자연수) ${H(W)}만 먼저 빼 봐!`;
     if (r === 'need') return kind === 'make' ? '🔎 틀의 빈칸을 세어 봐!' : `🔎 ${H(plan.made)}${jo(plan.made, '이', '가')} 되려면 무엇을 빼야 할지 블록을 세어 봐!`;
     if (r === 'rest') return '🔎 오른쪽 상자에 남은 블록을 세어 봐!';
-    if (r === 'made') return kind === 'make' ? '🔎 틀이 꽉 찼어! 틀 아래 숫자를 봐!' : '🔎 왼쪽 상자에 남은 블록을 세어 봐!';
+    if (r === 'made') return kind === 'make' ? (fd || plan.unit === 10 ? '🔎 판을 모두 세어 봐!' : '🔎 막대를 모두 세어 봐!') : '🔎 왼쪽 상자에 남은 블록을 세어 봐!';
     return '🔎 블록을 하나씩 세어 봐!';
   }
   function finish(){
@@ -473,6 +474,8 @@ function run(container, p, wrongPick, onDone){
   function grab(e){
     if (busy || roles[i] !== 'drag' || !alive() || ghostEl) return;
     if (e.button > 0) return;
+    // 놓쳐서 제자리로 돌아가는 중에 다시 잡으면, 돌아가던 복제본을 지금 지워요 (투명도 되돌리기와 안 겹치게)
+    if (backTimer){ clearTimeout(backTimer); backTimer = null; if (backGhost) backGhost.remove(); backGhost = null; }
     e.preventDefault();
     const src = e.currentTarget, r = src.getBoundingClientRect(), target = root.querySelector('[data-drop]');
     if (!target) return;
@@ -495,7 +498,8 @@ function run(container, p, wrongPick, onDone){
         next();
       } else {
         ghost.classList.add('mh-back'); place(r.left + dx, r.top + dy);
-        setTimeout(() => { ghost.remove(); src.style.opacity = ''; }, 260);
+        backGhost = ghost;
+        backTimer = setTimeout(() => { backTimer = null; backGhost = null; ghost.remove(); src.style.opacity = ''; }, 260);
         E.bub.innerHTML = steps[i].say + `<br><small class="mh-oops">${isSub ? '🤏 빼는 곳 위에서 손을 떼 봐!' : '🤏 빈칸 위에서 손을 떼 봐!'}</small>`;
         snd(220, .15, 'sine');
       }
