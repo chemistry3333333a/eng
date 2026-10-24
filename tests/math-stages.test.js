@@ -200,3 +200,23 @@ test('stars: first-try ratio >=90% 3, >=70% 2, else 1', () => {
   assert.equal(MS.stars(11, 12), 3); assert.equal(MS.stars(9, 12), 2); assert.equal(MS.stars(8, 12), 1);
   assert.equal(MS.stars(0, 0), 1);
 });
+
+test('bossReward: 💎 30 + stars×10 + hearts×3, math trophy max, no English fields', () => {
+  const S = MS.ensure({coins: 100, trophies: {10: 2}, pets: [10], petOn: 10});
+  S.math.coins = 5;
+  const s = {stage: 'm-frB', hearts: 4, coins: 12};
+  const r = MS.bossReward(S, s, 2);
+  assert.equal(r.coins, 30 + 20 + 12);
+  assert.equal(S.math.coins, 5 + 62); assert.equal(s.coins, 12 + 62);
+  assert.equal(S.math.trophies['m-frB'], 2);
+  assert.equal(r.trophyUp, true); assert.equal(r.newPet, false);
+  assert.equal(r.icon, '💎'); assert.equal(r.name, '피자 마왕'); assert.equal(r.hearts, 4); assert.equal(r.stars, 2);
+  assert.equal(S.coins, 100); assert.deepEqual(J(S.trophies), {10: 2});
+  assert.deepEqual(J(S.pets), [10]); assert.equal(S.petOn, 10);
+  // 더 낮은 별은 트로피를 내리지 않고, 하트가 없거나 음수면 보너스 0
+  const r2 = MS.bossReward(S, {stage: 'm-frB', hearts: -1, coins: 0}, 1);
+  assert.equal(r2.coins, 40); assert.equal(r2.hearts, 0);
+  assert.equal(S.math.trophies['m-frB'], 2); assert.equal(r2.trophyUp, false);
+  const r3 = MS.bossReward(S, {stage: 'm-deB', coins: 0}, 3);
+  assert.equal(r3.coins, 60); assert.equal(S.math.trophies['m-deB'], 3);
+});

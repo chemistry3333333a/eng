@@ -168,8 +168,9 @@ function map(){
    지금 문제의 힌트 상태(Q)는 저장하지 않아요. 나갔다 오면 그 문제를 처음부터 다시 내요 */
 const stageOf = id => MATH_STAGES.find(s => s.id === id);
 const nextOf = id => MATH_STAGES[MATH_STAGES.findIndex(s => s.id === id) + 1] || null;
-// 보스인지 정하는 곳은 여기 하나 (Task 7 이 보스 연출·Boss.optionCount()·Boss.onWrong() 을 여기에 붙여요)
+// 보스인지 정하는 곳은 여기 하나 (보스 연출은 boss.js 를 수학 문맥 BOSS 로 써요)
 const isBoss = id => !!(stageOf(id) && stageOf(id).boss);
+const bossNow = () => !!(window.Boss && S.math.session && isBoss(S.math.session.stage));
 const optCount = id => MATH_STAGES.findIndex(s => s.id === id) < 2 ? 3 : 4;   // 1~2번 스테이지는 3마리
 const ansHtml = p => MathCore.problemHtml(p).replace(/= \?$/, `= <b>${MathCore.html(p.ans)}</b>`);
 const skill = k => { const m = S.math.skills; return m[k] || (m[k] = {c:0, wrong:0}); };
@@ -181,7 +182,19 @@ let lastStage = null;
 // 힌트 칸 (#mhint). MathHint 는 이 칸의 내용을 통째로 바꿔요
 function hintShow(mode){ const h = $('mhint'); h.className = 'on ' + mode; h.scrollTop = 0; }
 function hintHide(){ const h = $('mhint'); h.className = ''; h.innerHTML = ''; }
-const busy = () => $('mhint').classList.contains('on');   // Task 7: 보스 timer 는 이게 true 인 동안 멈춰요
+const busy = () => $('mhint').classList.contains('on');   // 힌트가 열려 있는 동안 보스 swap/timer 는 쉬어요
+
+// boss.js 에 넘기는 수학 문맥 (Boss.use). 하트·분노는 S.math.session 에, 보상은 💎·S.math.trophies 로
+const BOSS = {
+  root: mg,
+  pal: mg.querySelector('#avPalM'),               // 수학 화면에 이미 있는 아바타 칸을 써요
+  session: () => S.math && S.math.session,
+  info: () => { const s = S.math && S.math.session; return (s && isBoss(s.stage) && MATH_BOSS[s.stage]) || null; },
+  stage: () => stageOf(S.math.session.stage),
+  busy: () => !Q || Q.locked || busy(),
+  grant: (s, stars) => MathStages.bossReward(S, s, stars),
+  rewardHtml: r => Boss.rewardHtml(r),
+};
 
 function start(id){
   MathStages.ensure(S);
@@ -195,8 +208,12 @@ function resume(){
   if (!S.math.session){ map(); return; }
   run++; Q = null; hintHide();
   Avatar.render($('avPalM'), {size:'s', pet:true});
+  const boss = bossNow();
+  if (window.Boss){ Boss.use(BOSS); Boss.reset(); }   // 보스 칸을 #mgame 으로, 지난 판의 보스 흔적 지우기
+  $('bossRow').classList.toggle('on', boss);
   show('mgame');
-  next();   // Task 7: 보스면 등장 장면 → 도전 버튼 → next
+  if (boss){ Boss.enter(next); return; }   // 보스 등장 장면 → 도전 버튼 → 첫 문제
+  next();
 }
 function dots(){
   const s = S.math.session;
@@ -207,9 +224,10 @@ function dots(){
 function next(){
   const s = S.math.session;
   if (!s) return;
-  if (s.i >= s.queue.length){ finish(); return; }
+  if (s.i >= s.queue.length){ if (bossNow()) Boss.victory(finish); else finish(); return; }
   const p = s.queue[s.i];
-  Q = {p, opts:MathStages.options(p, optCount(s.stage)), tries:0, afterHint:false, glow:false, locked:false, t0:Date.now(), wrong:null};
+  const n = bossNow() ? Boss.optionCount() : optCount(s.stage);
+  Q = {p, opts:MathStages.options(p, n), tries:0, afterHint:false, glow:false, locked:false, t0:Date.now(), wrong:null};
   dots();
   $('mQ').innerHTML = MathCore.problemHtml(p);
   $('mStatus').innerHTML = '';
@@ -234,6 +252,7 @@ function field(){
     f.appendChild(b);
   });
   Q.locked = false;
+  if (bossNow()) Boss.decorate(f, Q.p);   // 보스 기술 (힌트 뒤 다시 놓을 때도 새로: timer 는 여기서 다시 시작)
 }
 function glowNow(){
   Q.glow = true;
@@ -241,6 +260,8 @@ function glowNow(){
 }
 function tap(el){
   if (!Q || Q.locked) return;
+  const boss = bossNow();
+  if (boss && Boss.intercept(el)) return;   // 거미줄·얼음 먼저 걷어 내기 (정답 판정 없음)
   const s = S.math.session, p = Q.p;
   if (el.dataset.ok){
     Q.locked = true;
@@ -259,6 +280,7 @@ function tap(el){
     el.classList.remove('wrong', 'hint'); el.classList.add('caught');
     document.querySelectorAll('#mField .mon').forEach(m => { if (m !== el) m.classList.add('fade'); });
     floatText(el, c ? `+${pts} 💎+${c}` : `+${pts}`);
+    if (boss) Boss.onCorrect(el, {first, fast, combo:s.combo, last: s.i >= s.queue.length});
     Avatar.react($('avPalM'), 'cheer');
     $('mStatus').innerHTML = `<span class="answer">${ansHtml(p)}</span>` +
       (first && s.combo >= 2 ? `<span class="combo">🔥 ${s.combo} 콤보!</span>` : '');
@@ -274,12 +296,13 @@ function tap(el){
   s.combo = 0;
   if (Q.tries === 1) skill(p.kind).wrong++;
   save();
-  sfxBad(); Avatar.react($('avPalM'), 'hurt');
-  // Task 7: if (isBoss(s.stage)) Boss.onWrong();   (하트 −1, 힌트 안 단계 보기 오답은 해당 없음)
+  sfxBad(); if (!boss) Avatar.react($('avPalM'), 'hurt');   // 보스전은 boss.js 가 아야 해요
+  if (boss) Boss.onWrong();   // 몬스터를 잘못 잡을 때마다 하트 −1 (힌트 안 단계 보기 오답은 여기로 안 와요)
   el.classList.remove('wrong'); void el.offsetWidth; el.classList.add('wrong');
   if (Q.afterHint){ glowNow(); return; }     // 4. 힌트를 본 뒤 또 틀리면 고르기 없이 정답이 빛나요
   if (Q.tries >= 2) glowNow();               // 3. 혼자 다시 풀다 또 틀리면 이번부터 정답이 빛나요
   Q.locked = true;                           // 1. 고르기를 띄우는 동안 몬스터는 잠가요
+  if (boss) Boss.stop();                     //    보스 timer·swap 도 쉬어요 (힌트 뒤 field() 에서 다시 시작)
   const q = Q, r = run;
   setTimeout(() => { if (r === run && Q === q) ask(q); }, 650);   // 빨간 몬스터를 잠깐 보여 주고
 }
@@ -311,8 +334,9 @@ function finish(){
   const prev = S.math.stages[s.stage], nx = nextOf(s.stage);
   const opened = !prev && !!nx;
   S.math.stages[s.stage] = {stars: Math.max(stars, prev ? prev.stars : 0), best: Math.max(s.score, prev ? prev.best : 0)};
-  // Task 7: 보스면 트로피·💎 보상 (Boss.grantRewards 대신 수학용)
+  const reward = (isBoss(s.stage) && window.Boss) ? BOSS.grant(s, stars) : null;   // 보물상자·수학 트로피·💎 (펫 없음)
   S.math.session = null; touchStreak(); save();
+  if (window.Boss) Boss.reset();
 
   const st = stageOf(s.stage);
   Avatar.render($('mAvRes'), {size:'m', pose:'cheer', pet:true});
@@ -321,15 +345,18 @@ function finish(){
   $('mrStats').innerHTML = `<span class="pill">🎯 한 번에 ${s.first}/${n}</span>
     <span class="pill">⭐ ${s.score}점</span><span class="pill">🔥 최고 ${s.maxCombo}콤보</span>
     <span class="pill">💎 +${s.coins}</span>`;
-  $('mrNew').innerHTML = opened ? `<p style="margin:10px 0 0;font-size:22px;color:#16a34a">🔓 새 스테이지가 열렸어요!</p>` : '';
+  $('mrNew').innerHTML = (reward ? BOSS.rewardHtml(reward) : '') +
+    (opened ? `<p style="margin:10px 0 0;font-size:22px;color:#16a34a">🔓 새 스테이지가 열렸어요!</p>` : '');
   $('mrNext').style.display = nx ? '' : 'none';
   show('mresult'); sfxWin();
+  if (reward){ Boss.showChest(reward); return; }
   setTimeout(() => say(stars === 3 ? '완벽해요! 정말 대단해요!' : '잘했어요!'), 500);
 }
 
 $('mQuit').onclick = () => {
   if (confirm('지도로 갈까요?\n지금까지 한 것은 저장돼서 나중에 이어서 할 수 있어요 😊')){
     run++; Q = null; hintHide();
+    if (window.Boss) Boss.reset();
     try { if ('speechSynthesis' in window) speechSynthesis.cancel(); } catch(e){}
     save(); map();
   }

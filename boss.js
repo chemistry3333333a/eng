@@ -4,6 +4,8 @@
    - 보스마다 다른 특수 기술 (INFO 의 skill)
    - 보상: 보물상자(코인), 트로피, 구해 낸 친구(펫)
    index.html 의 게임 코드가 Boss.* 를 불러 써요.
+   - 문맥(ctx): Boss.use(ctx) 로 어느 화면·세션의 보스전인지 정해요.
+     Boss.ENG 는 영어 섬(기존 그대로), 수학 섬은 math-game.js 가 자기 ctx 를 넘겨요.
    ===================================================================== */
 (function(){
 const INFO = {
@@ -45,10 +47,10 @@ const css = `
 .bx-charge{height:10px;background:#fff;border-radius:6px;overflow:hidden;display:none;}
 .bx-charge.on{display:block;}
 .bx-charge i{display:block;height:100%;width:0;background:linear-gradient(90deg,#facc15,#ef4444);}
-#game.bx-on{background:linear-gradient(180deg,#4c1d95,#a78bfa);}
-#game.bx-on.bx-rage{background:linear-gradient(180deg,#7f1d1d,#f97316);}
-#game.bx-on .status{color:#fff;}
-#game.bx-on .status .answer{color:#1e293b;}
+#game.bx-on,#mgame.bx-on{background:linear-gradient(180deg,#4c1d95,#a78bfa);}
+#game.bx-on.bx-rage,#mgame.bx-on.bx-rage{background:linear-gradient(180deg,#7f1d1d,#f97316);}
+#game.bx-on .status,#mgame.bx-on .status{color:#fff;}
+#game.bx-on .status .answer,#mgame.bx-on .status .answer{color:#1e293b;}
 .bx-shake{animation:bxShake .45s;}
 
 .field.ghosty .mon .blob{animation:bxGhost 3.2s infinite;}
@@ -137,10 +139,31 @@ $('setBtn').before(tBtn);
 
 /* ---------- 상태 ---------- */
 let timers = [], won = false, qSkill = 'none', qSay = null;
-const ses = () => S && S.session;
-const isOn = () => { const s = ses(); return !!(s && typeof s.stage === 'number' && INFO[s.stage]); };
-const info = () => INFO[ses().stage];
-const bossStage = () => STAGES.find(s => s.id === ses().stage);
+/* ---------- 문맥(ctx) ----------
+   ctx = {root, session(), info(), stage(), busy(), grant(session, stars), rewardHtml(reward), pal?}
+   root: 보스 칸·아바타를 붙일 화면, info(): null 이면 보스 아님, busy(): true 면 swap/timer 가 쉬어요
+   pal(선택): 그 화면에 이미 있는 아바타 칸. 없으면 공용 #avPal 을 root 로 옮겨 써요 */
+const ENG = {
+  root: $('game'),
+  session: () => S && S.session,
+  info: () => { const s = S && S.session; return (s && typeof s.stage === 'number' && INFO[s.stage]) || null; },
+  stage: () => STAGES.find(s => s.id === S.session.stage),
+  busy: () => !Q || Q.locked,                       // index.html 의 영어 Q
+  grant: (s, stars) => grantRewards(s, stars),
+  rewardHtml: r => rewardHtml(r),
+};
+let ctx = ENG;
+function use(c){
+  ctx = c;
+  const top = c.root.querySelector('.topbar'), row = $('bossRow');
+  if (row.previousElementSibling !== top) top.after(row);
+  if (!c.pal && pal.parentNode !== c.root) c.root.appendChild(pal);
+}
+const palEl = () => ctx.pal || pal;
+const ses = () => ctx.session();
+const isOn = () => !!(ctx.session() && ctx.info());
+const info = () => ctx.info();
+const bossStage = () => ctx.stage();
 const later = (fn, ms) => { const t = setTimeout(fn, ms); timers.push(t); return t; };
 function clearTimers(){
   timers.forEach(t => { clearTimeout(t); clearInterval(t); }); timers = [];
@@ -154,7 +177,7 @@ function banner(text){
   const b = document.createElement('div'); b.className = 'bx-banner'; b.textContent = text;
   document.body.appendChild(b); setTimeout(() => b.remove(), 1500);
 }
-function shake(){ const g = $('game'); g.classList.remove('bx-shake'); void g.offsetWidth; g.classList.add('bx-shake'); }
+function shake(){ const g = ctx.root; g.classList.remove('bx-shake'); void g.offsetWidth; g.classList.add('bx-shake'); }
 function retrigger(el, cls){ el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); }
 const boom = () => { tone(90,.4,'sawtooth',0,.12); tone(60,.5,'square',.05,.08); };
 const zap  = () => { tone(1200,.08,'square',0,.06); tone(1800,.1,'square',.06,.05); };
@@ -179,20 +202,20 @@ function updateHp(){
   $('hpFill').style.width = w; $('hpLag').style.width = w;
 }
 function renderPet(){
-  Avatar.render(pal, {size:'s', pet:true});   // 꾸민 캐릭터 + 고른 펫
+  Avatar.render(palEl(), {size:'s', pet:true});   // 꾸민 캐릭터 + 고른 펫
 }
 
 /* ---------- 등장 ---------- */
 function reset(){
   clearTimers(); won = false;
   document.querySelectorAll('.bx-ov').forEach(o => o.remove());
-  $('game').classList.remove('bx-on','bx-rage');
+  ctx.root.classList.remove('bx-on','bx-rage');
   renderPet();
 }
 function enter(go){
   const s = ses(), st = bossStage(), inf = info();
   if (s.hearts === undefined){ s.hearts = MAX_HEARTS; s.rage = false; s.revived = false; save(); }
-  $('game').classList.add('bx-on'); $('game').classList.toggle('bx-rage', !!s.rage);
+  ctx.root.classList.add('bx-on'); ctx.root.classList.toggle('bx-rage', !!s.rage);
   $('bossFace').textContent = st.icon; $('bossFace').classList.toggle('rage', !!s.rage);
   $('bossName').textContent = st.name; $('bossSkill').textContent = SKILL_LABEL[inf.skill === 'mix' ? 'none' : inf.skill] || '';
   renderHearts(); updateHp();
@@ -233,7 +256,7 @@ function decorate(field, target){
     qSay = SENT[Math.floor(Math.random() * SENT.length)](target);
   } else if (qSkill === 'swap'){
     const t = setInterval(() => {
-      if (!Q || Q.locked) return;
+      if (ctx.busy()) return;
       shuffle([...field.children]).forEach(m => { field.appendChild(m); retrigger(m, 'bxpop'); });
       tone(500,.06,'triangle',0,.05);
     }, rage ? 2000 : 3000);
@@ -248,7 +271,7 @@ function startCharge(ms){
   c.classList.add('on'); bar.style.transition = 'none'; bar.style.width = '0'; void bar.offsetWidth;
   bar.style.transition = `width ${ms}ms linear`; bar.style.width = '100%';
   later(() => {
-    if (!Q || Q.locked) return;
+    if (ctx.busy()) return;
     toast('⏳ 시간 초과! 보스의 공격!', 1400);
     attack();
     startCharge(ms);
@@ -304,7 +327,7 @@ function onCorrect(el, o){
 function rageOn(){
   const s = ses(), inf = info();
   s.rage = true; save();
-  $('game').classList.add('bx-rage'); $('bossFace').classList.add('rage');
+  ctx.root.classList.add('bx-rage'); $('bossFace').classList.add('rage');
   banner('😡 분노 모드!'); boom(); shake();
   speak(inf.rage[0]); toast(`😡 "${inf.rage[1]}"`, 1600);
 }
@@ -314,7 +337,7 @@ function attack(){
   setTimeout(() => {
     shake(); boom();
     const f = document.createElement('div'); f.className = 'bx-flash'; document.body.appendChild(f); setTimeout(() => f.remove(), 700);
-    s.hearts--; Avatar.react(pal, 'hurt');
+    s.hearts--; Avatar.react(palEl(), 'hurt');
     if (s.hearts <= 0 && !s.revived){            // 게임오버 대신 요정이 한 번 살려 줘요
       s.hearts = 3; s.revived = true;
       setTimeout(() => toast('🧚 요정이 하트를 채워 줬어요! 포기하지 마!', 2200), 300);
@@ -353,12 +376,12 @@ function grantRewards(s, stars){
   const hearts = Math.max(0, s.hearts || 0);
   const coins = 30 + stars * 10 + hearts * 3;
   S.coins += coins; s.coins += coins;
-  return {coins, stars, hearts, trophyUp: stars > prev, newPet, pet: PETS[id], name: bossName(id)};
+  return {coins, stars, hearts, trophyUp: stars > prev, newPet, pet: PETS[id], name: bossName(id), icon:'🪙'};
 }
 const bossName = id => (STAGES.find(s => s.id === id) || {}).name;
 function rewardHtml(r){
   return `<p style="margin:6px 0;font-size:22px">🎁 보스 보상</p><div class="newcards">
-    <span>🪙 코인 +${r.coins}</span><span>${MEDAL[r.stars]} 트로피${r.trophyUp ? ' 획득!' : ''}</span>
+    <span>${r.icon || '🪙'} 코인 +${r.coins}</span><span>${MEDAL[r.stars]} 트로피${r.trophyUp ? ' 획득!' : ''}</span>
     ${r.newPet ? `<span>${r.pet[0]} ${r.pet[1]}를 구했어요!</span>` : ''}</div>`;
 }
 function showChest(r){
@@ -368,7 +391,7 @@ function showChest(r){
     sfxWin(); confetti(20);
     o.innerHTML = `<div class="bx-warn" style="animation:none">🎉 보물 획득! 🎉</div>
       <div class="bx-rew">
-        <div>🪙 코인 +${r.coins} <small style="font-size:16px">(하트 ${r.hearts}개 보너스 포함)</small></div>
+        <div>${r.icon || '🪙'} 코인 +${r.coins} <small style="font-size:16px">(하트 ${r.hearts}개 보너스 포함)</small></div>
         <div>${MEDAL[r.stars]} ${r.name} 트로피${r.trophyUp ? ' 획득!' : ''}</div>
         ${r.newPet ? `<div>${r.pet[0]} 친구 <b>${r.pet[1]}</b>를 구했어요!<br><small style="font-size:17px">이제 게임에서 함께 다녀요</small></div>` : ''}
       </div>
@@ -382,7 +405,7 @@ function showChest(r){
 
 /* ---------- 펫 ---------- */
 function petCheer(){
-  const pet = S.petOn && pal.querySelector('.av-pet');
+  const pet = S.petOn && palEl().querySelector('.av-pet');
   if (!pet) return;
   const old = pet.querySelector('.pb'); if (old) old.remove();
   const b = document.createElement('span'); b.className = 'pb';
@@ -416,6 +439,6 @@ function renderTrophies(){
 tBtn.onclick = renderTrophies;
 $('trophyBack').onclick = renderMap;
 
-window.Boss = {isOn, reset, enter, optionCount, decorate, speech, intercept, onCorrect, onWrong, victory,
+window.Boss = {ENG, use, grant: (s, stars) => ctx.grant(s, stars), isOn, reset, enter, optionCount, decorate, speech, intercept, onCorrect, onWrong, victory,
   grantRewards, rewardHtml, showChest, petCheer, stop: () => { clearTimers(); document.querySelectorAll('.bx-ov').forEach(o => o.remove()); }};
 })();

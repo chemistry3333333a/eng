@@ -156,5 +156,17 @@ function unlocked(S, id){
 // 별: 첫 시도에 맞힌 비율 (영어와 같은 기준)
 function stars(first, n){ const r = n ? first / n : 0; return r >= 0.9 ? 3 : r >= 0.7 ? 2 : 1; }
 
-window.MathStages = {gen, buildQueue, options, ensure, unlocked, stars};
+// 수학 보스 보상: 💎 30 + 별×10 + 하트×3 → S.math.coins, 트로피는 S.math.trophies 에 최고 별 (펫·S.trophies·S.coins 는 안 건드려요)
+function bossReward(S, s, stars){
+  ensure(S);
+  const id = s.stage, prev = S.math.trophies[id] || 0;
+  S.math.trophies[id] = Math.max(prev, stars);
+  const hearts = Math.max(0, s.hearts || 0);
+  const coins = 30 + stars * 10 + hearts * 3;
+  S.math.coins += coins; s.coins += coins;
+  const st = MATH_STAGES.find(x => x.id === id) || {};
+  return {coins, stars, hearts, trophyUp: stars > prev, newPet: false, name: st.name, icon: '💎'};
+}
+
+window.MathStages = {gen, buildQueue, options, ensure, unlocked, stars, bossReward};
 })();

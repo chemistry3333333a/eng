@@ -568,6 +568,7 @@ function startStage(id){
 }
 let Q = null; // 현재 문제 상태(저장 안 함)
 function resumeGame(){
+  if (window.Boss) Boss.use(Boss.ENG);   // 보스 칸·문맥을 영어 #game 으로 (수학 보스 뒤에도)
   const ses = S.session;
   const isBoss = ses.stage !== 'review' && STAGES.find(s=>s.id===ses.stage).boss;
   $('bossRow').classList.toggle('on', !!isBoss);
