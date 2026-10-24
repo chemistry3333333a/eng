@@ -175,3 +175,13 @@ test('quiz discount is 10% for math items too', () => {
   assert.equal(Avatar.priceOf('m_ruler', {quiz:true}), 36);
 });
 test('every item has cur eng or math', () => { const {ITEMS} = mk(); ITEMS.forEach(i => assert.ok(['eng','math'].includes(i.cur))); });
+test('English quiz wrong-choice pool only has cur eng items', () => {
+  const {Avatar, ITEMS} = mk();
+  ITEMS.filter(i => i.cur === 'eng').forEach(it => {
+    for (let k = 0; k < 5; k++){
+      const w = Avatar.quizWrong(it, a => a.slice().sort(() => Math.random() - 0.5));
+      assert.equal(w.length, 2);
+      w.forEach(x => assert.equal(x.cur, 'eng'));
+    }
+  });
+});

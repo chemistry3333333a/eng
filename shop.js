@@ -224,7 +224,8 @@ function mathOffer(it){
   });
 }
 function mathQuiz(it){
-  const open = MATH_STAGES.filter(s => !s.boss && MathStages.unlocked(S, s.id));
+  // 쉬운 문제: 열린 챕터의 첫 스테이지에서만
+  const open = MATH_STAGES.filter((s, i) => (i === 0 || MATH_STAGES[i-1].ch !== s.ch) && MathStages.unlocked(S, s.id));
   const st = open[Math.floor(Math.random() * open.length)] || MATH_STAGES[0];
   const prob = MathStages.gen(st.id), opts = MathStages.options(prob, 3);
   let done = false, done2 = false;
@@ -250,9 +251,7 @@ function mathQuiz(it){
 }
 function quiz(it){
   // 같은 슬롯의 다른 아이템 2개 (같은 그림은 빼고), 모자라면 전체에서 채워요
-  const bad = x => x.id !== it.id && x.icon !== it.icon;
-  let wrong = shuffle(ITEMS.filter(x => bad(x) && x.slot === it.slot)).slice(0, 2);
-  if (wrong.length < 2) wrong = wrong.concat(shuffle(ITEMS.filter(x => bad(x) && !wrong.includes(x))).slice(0, 2 - wrong.length));
+  const wrong = Avatar.quizWrong(it, shuffle);
   const choices = shuffle([it, ...wrong]);
   let done = false, done2 = false;
   showModal(p => {

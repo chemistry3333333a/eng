@@ -107,11 +107,13 @@ function goMath(){
   map();
 }
 
+// 받침 있으면 아, 없으면(또는 한글 아님) 야
+const hasFinal = n => { const c = (n || '').slice(-1).charCodeAt(0) - 0xAC00; return c >= 0 && c <= 11171 && c % 28 !== 0; };
 function pick(){
   MathStages.ensure(S);
-  $('islTitle').textContent = `🧒 ${S.name}야, 오늘은 뭘 할까?`;
+  $('islTitle').textContent = `🧒 ${S.name}${hasFinal(S.name) ? '아' : '야'}, 오늘은 뭘 할까?`;
   $('islEng').innerHTML = `<span class="big">🔤</span>영어 섬<small>🪙 ${S.coins} · 단어 ${seenWords()}개</small>`;
-  $('islMath').innerHTML = `<span class="big">🔢</span>수학 섬<small>💎 ${S.math.coins} · 4-2 분수·소수</small>`;
+  $('islMath').innerHTML = `<span class="big">🔢</span>수학 섬<small>💎 ${S.math.coins} · 스테이지 ${MATH_STAGES.filter(s => (S.math.stages[s.id] || {}).stars > 0).length}/${MATH_STAGES.length}</small>`;
   show('island');
 }
 $('islEng').onclick = goEng;

@@ -193,6 +193,14 @@ function react(el, kind){
   root._avT = setTimeout(() => { root.classList.remove('av-' + kind); root.classList.add('av-idle'); }, POSE_MS[kind]);
 }
 
-window.Avatar = {ensure, item: byId, owns, isUnlocked, lockText, wallet, deal, priceOf, canBuy, buy,
+// 영어 그림 퀴즈의 오답 후보: 영어 아이템만 (수학 아이템은 제외)
+function quizWrong(it, shuffle = a => a){
+  const bad = x => x.cur === 'eng' && x.id !== it.id && x.icon !== it.icon;
+  let wrong = shuffle(ITEMS.filter(x => bad(x) && x.slot === it.slot)).slice(0, 2);
+  if (wrong.length < 2) wrong = wrong.concat(shuffle(ITEMS.filter(x => bad(x) && !wrong.includes(x))).slice(0, 2 - wrong.length));
+  return wrong;
+}
+
+window.Avatar = {quizWrong, ensure, item: byId, owns, isUnlocked, lockText, wallet, deal, priceOf, canBuy, buy,
   equip, unequip, setBody, equipped, perks, giftChoices, claimGift, render, react};
 })();

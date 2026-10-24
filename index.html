@@ -463,7 +463,7 @@ function renderHome(){
   if (S){
     $('newUser').style.display = 'none'; $('oldUser').style.display = 'flex';
     $('helloTxt').textContent = `안녕, ${S.name}! 🔥 ${S.streak.n}일째 · Lv.${level()}`;
-    $('continueBtn').textContent = S.session ? '▶ 하던 게임 이어하기' : '▶ 이어하기';
+    $('continueBtn').textContent = (S.session || (S.math && S.math.session)) ? '▶ 하던 게임 이어하기' : '▶ 이어하기';
   } else {
     $('newUser').style.display = 'flex'; $('oldUser').style.display = 'none';
   }
@@ -774,7 +774,7 @@ $('restoreBtn').onclick = () => {
     const data = decodeSave($('backupIn').value);
     if (!data || !data.name || !data.words) throw 0;
     if (!confirm(`'${data.name}'의 기록으로 바꿀까요?`)) return;
-    S = MathStages.ensure(Avatar.ensure(data)); save(); $('setModal').classList.remove('on'); renderMap(); toast('복구 완료! ✅');
+    S = MathStages.ensure(Avatar.ensure(data)); save(); $('setModal').classList.remove('on'); (S.mode === 'math' ? MathGame.map() : renderMap()); toast('복구 완료! ✅');
   } catch(e){ toast('코드가 올바르지 않아요 😢'); }
 };
 $('resetBtn').onclick = () => {

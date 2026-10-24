@@ -204,7 +204,7 @@ function confetti(root){
 // ── 틀렸을 때: 힌트 고르기 ──
 function ask(container, o = {}){
   const root = mount(container);
-  const w = o.wrong ? `<b>${H(o.wrong)}</b>은(는) ` : '그건 ';
+  const w = o.wrong ? `<b>${H(o.wrong)}</b>${jo(o.wrong,'은','는')} ` : '그건 ';
   root.innerHTML = `<div class="mh-owl"><div class="mh-who">🦉</div><div class="mh-bub">앗, 아까웠어! ${w}정답이 아니야. 어떻게 할래?</div></div>
     <div class="mh-pick">
       <button type="button" class="mh-big mh-h">🦉 힌트 보고 풀기<small>부엉이랑 같이 블록으로!</small></button>
