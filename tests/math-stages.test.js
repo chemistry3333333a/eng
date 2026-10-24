@@ -192,3 +192,11 @@ test('boss skills are visual only', () => {
     assert.equal(b.taunt.length, 2); assert.equal(b.rage.length, 2);
   });
 });
+
+test('stars: first-try ratio >=90% 3, >=70% 2, else 1', () => {
+  assert.equal(MS.stars(10, 10), 3); assert.equal(MS.stars(9, 10), 3);
+  assert.equal(MS.stars(8, 10), 2); assert.equal(MS.stars(7, 10), 2);
+  assert.equal(MS.stars(6, 10), 1); assert.equal(MS.stars(0, 10), 1);
+  assert.equal(MS.stars(11, 12), 3); assert.equal(MS.stars(9, 12), 2); assert.equal(MS.stars(8, 12), 1);
+  assert.equal(MS.stars(0, 0), 1);
+});

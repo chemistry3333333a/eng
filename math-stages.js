@@ -153,5 +153,8 @@ function unlocked(S, id){
   return i === 0 || !!(S.settings && S.settings.openAll) || !!st[id] || !!(prev && prev.stars > 0);
 }
 
-window.MathStages = {gen, buildQueue, options, ensure, unlocked};
+// 별: 첫 시도에 맞힌 비율 (영어와 같은 기준)
+function stars(first, n){ const r = n ? first / n : 0; return r >= 0.9 ? 3 : r >= 0.7 ? 2 : 1; }
+
+window.MathStages = {gen, buildQueue, options, ensure, unlocked, stars};
 })();
