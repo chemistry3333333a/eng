@@ -52,6 +52,8 @@ function checkPlan(p, label){
     assert.ok(M.same(M.sub(Lc, need), made), label + ': down made');
     const Rr = pl.whole ? M.sub(R, pl.whole) : R;
     assert.ok(M.same(M.add(need, rest), Rr), label + ': down parts');
+    // 내려가는 수는 딱 떨어져요 (자연수, 또는 백분의 일 자리가 0)
+    assert.ok(made.t === 'd' ? made.h % 10 === 0 : made.n === 0, `${label}: made not round ${M.text(made)}`);
     assert.equal(pl.steps.length, pl.whole ? 6 : 5, label + ': down steps');
   } else if (pl.kind === 'break'){
     assert.equal(pl.steps.length, pl.whole ? 3 : 2, label + ': break steps');
@@ -164,6 +166,7 @@ const kinds = [
   ['0.3+0.4',   'gather', {}], ['0.7-0.3', 'take', {}],
   ['0.53-0.28', 'down', {L:'0.53', R:'0.28', need:'0.03', rest:'0.25', made:'0.5'}],
   ['1.2-0.35',  'down', {L:'1.2',  R:'0.35', need:'0.2',  rest:'0.15', made:'1'}],
+  ['1.25-0.4',  'down', {L:'1.25', R:'0.4', need:'0.25', rest:'0.15', made:'1'}],
   ['1 2/5-4/5', 'down', {L:'1 2/5', R:'4/5', need:'2/5',  rest:'2/5',  made:'1'}],
   ['3-1.25',    'break', {L:'3', R:'1.25', whole:'1', afterWhole:'2'}],
   ['1-3/8',     'break', {L:'1', R:'3/8'}],
@@ -190,8 +193,16 @@ test('hintPlan names and the whole-number first step', () => {
   assert.equal(pl.kind, 'down'); assert.equal(M.text(pl.whole), '1'); assert.equal(M.text(pl.afterWhole), '2 1/5');
   assert.equal(M.text(pl.steps[0].answer), '2 1/5');
   assert.equal(M.text(pl.need), '1/5'); assert.equal(M.text(pl.made), '2'); assert.equal(M.text(pl.rest), '2/5');
-  // 1.9 − 0.35 는 쪼개서 빼기
-  assert.equal(M.hintPlan(prob('1.9-0.35')).kind, 'break');
+  // 1.9 − 0.35 는 쪼개서 빼기 (막대만 쪼개요)
+  const b19 = M.hintPlan(prob('1.9-0.35'));
+  assert.equal(b19.kind, 'break');
+  assert.ok(b19.steps[0].say.includes('막대 1개를 작은 칸 10개로') && !b19.steps[0].say.includes('판 1장'));
+  // 두 번 쪼개야 하면 둘 다 말해요
+  const two = '판 1장을 막대 10개로, 막대 1개를 작은 칸 10개로';
+  assert.ok(M.hintPlan(prob('1.2-0.35')).steps[4].say.includes(two));
+  assert.ok(M.hintPlan(prob('3-1.25')).steps[1].say.includes(two));
+  assert.ok(M.hintPlan(prob('1.25-0.4')).steps[4].say.includes(two));         // 1 − 0.15
+  assert.ok(M.hintPlan(prob('2-0.3')).steps.some(s => s.say.includes('판 1장을 막대 10개로 쪼개서')));
 });
 test('hintPlan invariants hold on 2000 random problems', () => {
   const r = rng(777);

@@ -169,10 +169,11 @@ function planAdd(p){
   ]};
 }
 
-// 판이나 막대를 쪼개는 말
-function splitWord(v){
+// 판이나 막대를 쪼개는 말 (v 에서 r 을 뺄 때). 판을 쪼갰는데 작은 칸까지 필요하면 두 번 쪼개요
+function splitWord(v, r){
   if (!isD(v)) return `판 1장을 ${v.d}칸으로`;
-  return v.h % 100 === 0 ? '판 1장을 막대 10개로' : '막대 1개를 작은 칸 10개로';
+  if (v.h % 100 !== 0) return '막대 1개를 작은 칸 10개로';
+  return r.h % 10 ? '판 1장을 막대 10개로, 막대 1개를 작은 칸 10개로' : '판 1장을 막대 10개로';
 }
 
 function planSub(p){
@@ -196,11 +197,13 @@ function planSub(p){
     `${html(L, 'cb')} − ${html(W, 'co')} = ?`, Lc, [add(L, W), shift(Lc, -one(L)), shift(Lc, one(L))], one(L), 5));
   const eqC = `${html(Lc, 'cb')} − ${html(Rr, 'co')} = ?`;
   // 받아내림 자리 아래 조각 (0.53 → 0.03, 1.2 → 0.2, 1 2/5 → 2/5)
-  const need = fd ? frac(0, Lc.n, Lc.d) : D(Lc.h % 10 || Lc.h % 100);
+  // 백분의 일 자리에서 받아내림이 있을 때만 그 자리 조각, 아니면 소수 부분 전체 (1.25 − 0.4 → 0.25)
+  const b0 = !fd && dig(Lc.h, 0) < dig(Rr.h, 0);
+  const need = fd ? frac(0, Lc.n, Lc.d) : D(b0 && Lc.h % 10 || Lc.h % 100);
   const n0 = k => steps.length + k;   // 보기 정답 자리용 단계 번호
   if (!(tot0(need) > 0 && le(need, Rr))){
     const name = '쪼개서 빼기', unit = fd ? a.d : decUnit(Lc, Rr);
-    steps.push({say:`<b>${name}</b>를 하자 🎯<br>${splitWord(Lc)} 쪼개서 ${Rrh}만큼 끌어서 빼내 줘 ✋`, eq:eqC, drag:true});
+    steps.push({say:`<b>${name}</b>를 하자 🎯<br>${splitWord(Lc, Rr)} 쪼개서 ${Rrh}만큼 끌어서 빼내 줘 ✋`, eq:eqC, drag:true});
     steps.push(finalStep(p, `남은 블록을 세어 보자! ${Lch} − ${Rrh}${jo(Rr, '은', '는')}?`, eqC, fd ? 1 : unit, n0(0)));
     return {kind:'break', L, R, need:Rr, rest:null, made:null, unit, name,
             whole:hasW ? W : null, afterWhole:hasW ? Lc : null, steps};
@@ -216,7 +219,7 @@ function planSub(p){
         `${html(Rr, 'co')} = ${html(need, 'cg')} + ${Q}`, rest, [add(Rr, need), dbl(rest), d10(rest), x10(rest)], u, n0(2)),
     ask(`${Lch} − ${Nh}${jo(need, '은', '는')}?`, `${html(Lc, 'cb')} − ${html(need, 'cg')} − ${html(rest, 'co')} = ?`, made,
         [add(Lc, need), x10(made), d10(made), shift(made, one(made))], u, n0(3)),
-    finalStep(p, `딱 ${Mh}${jo(made, '이', '가')} 됐어! 🎉 이제 ${splitWord(made)} 쪼개서 ${Sh}${jo(rest, '을', '를')} 빼면 끝! ${Mh} − ${Sh}${jo(rest, '은', '는')}?`,
+    finalStep(p, `딱 ${Mh}${jo(made, '이', '가')} 됐어! 🎉 이제 ${splitWord(made, rest)} 쪼개서 ${Sh}${jo(rest, '을', '를')} 빼면 끝! ${Mh} − ${Sh}${jo(rest, '은', '는')}?`,
         `${html(made, 'hl')} − ${html(rest, 'co')} = ?`, u, n0(4)),
   );
   return {kind:'down', L, R, need, rest, made, unit, name, whole:hasW ? W : null, afterWhole:hasW ? Lc : null, steps};
