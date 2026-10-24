@@ -344,6 +344,8 @@ button{font-family:inherit;color:inherit;cursor:pointer;touch-action:manipulatio
 <script src="words.js"></script>
 <script src="items.js"></script>
 <script src="avatar.js"></script>
+<script src="math-core.js"></script>
+<script src="math-stages.js"></script>
 <script>
 /* ================== 데이터 ================== */
 // 단어 데이터는 words.js 에 있어요 (STAGE_DEFS, CHAPTERS, HOMOPHONES)
@@ -369,7 +371,7 @@ const KEY = 'wordisland_save_v1';
 /* ================== 저장 ================== */
 let S = null;
 function freshSave(name){
-  return Avatar.ensure({v:1, name, xp:0, coins:0, stages:{}, words:{}, streak:{n:0,last:''}, settings:{rate:0.85}, session:null, parrot:{best:0,played:0}});
+  return MathStages.ensure(Avatar.ensure({v:1, name, xp:0, coins:0, stages:{}, words:{}, streak:{n:0,last:''}, settings:{rate:0.85}, session:null, parrot:{best:0,played:0}}));
 }
 function loadSave(){
   try { const raw = localStorage.getItem(KEY); if (raw) return JSON.parse(raw); } catch(e) {}
@@ -457,7 +459,7 @@ function floatText(el, text){
 /* ================== 홈 ================== */
 function renderHome(){
   S = loadSave();
-  if (S) Avatar.ensure(S);
+  if (S){ Avatar.ensure(S); MathStages.ensure(S); }
   if (S){
     $('newUser').style.display = 'none'; $('oldUser').style.display = 'flex';
     $('helloTxt').textContent = `안녕, ${S.name}! 🔥 ${S.streak.n}일째 · Lv.${level()}`;
@@ -472,13 +474,12 @@ $('startBtn').onclick = () => {
   if (!name){ $('nameInput').focus(); toast('이름을 써 주세요!'); return; }
   unlockAudio();
   S = freshSave(name); touchStreak(); save();
-  renderMap();
-  setTimeout(() => speak("Hello! Let's catch monsters!"), 300);
+  MathGame.pick();
 };
 $('nameInput').addEventListener('keydown', e => { if (e.key === 'Enter') $('startBtn').click(); });
 $('continueBtn').onclick = () => {
   unlockAudio(); touchStreak();
-  if (S.session) resumeGame(); else renderMap();
+  MathGame.pick();
 };
 
 /* ================== 지도 ================== */
@@ -759,7 +760,7 @@ function renderOpenAll(){
   b.textContent = on ? '🔓 켜짐 (눌러서 끄기)' : '🔒 꺼짐 (눌러서 켜기)';
   b.className = 'btn small ' + (on ? 'green' : 'gray');
 }
-$('openAllBtn').onclick = () => { S.settings.openAll = !S.settings.openAll; save(); renderOpenAll(); renderMap(); $('setModal').classList.add('on'); };
+$('openAllBtn').onclick = () => { S.settings.openAll = !S.settings.openAll; save(); renderOpenAll(); (S.mode === 'math' ? MathGame.map() : renderMap()); $('setModal').classList.add('on'); };
 $('setBtn').onclick = () => { renderRates(); renderOpenAll(); $('backupOut').value = encodeSave(); $('backupIn').value = ''; $('setModal').classList.add('on'); };
 $('setClose').onclick = () => $('setModal').classList.remove('on');
 $('copyBtn').onclick = async () => {
@@ -772,7 +773,7 @@ $('restoreBtn').onclick = () => {
     const data = decodeSave($('backupIn').value);
     if (!data || !data.name || !data.words) throw 0;
     if (!confirm(`'${data.name}'의 기록으로 바꿀까요?`)) return;
-    S = Avatar.ensure(data); save(); $('setModal').classList.remove('on'); renderMap(); toast('복구 완료! ✅');
+    S = MathStages.ensure(Avatar.ensure(data)); save(); $('setModal').classList.remove('on'); renderMap(); toast('복구 완료! ✅');
   } catch(e){ toast('코드가 올바르지 않아요 😢'); }
 };
 $('resetBtn').onclick = () => {
@@ -964,5 +965,6 @@ renderHome();
 </script>
 <script src="boss.js"></script>
 <script src="shop.js"></script>
+<script src="math-game.js"></script>
 </body>
 </html>
