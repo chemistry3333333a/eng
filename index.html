@@ -342,6 +342,7 @@ button{font-family:inherit;color:inherit;cursor:pointer;touch-action:manipulatio
 </div>
 
 <script src="words.js"></script>
+<script src="sentences.js"></script>
 <script src="items.js"></script>
 <script src="avatar-art.js"></script>
 <script src="avatar.js"></script>
@@ -571,6 +572,7 @@ let Q = null; // 현재 문제 상태(저장 안 함)
 function resumeGame(){
   if (window.Boss) Boss.use(Boss.ENG);   // 보스 칸·문맥을 영어 #game 으로 (수학 보스 뒤에도)
   const ses = S.session;
+  if (ses.sent && window.SentenceGame){ SentenceGame.resume(); return; }   // 문장 라운드 하던 중
   const isBoss = ses.stage !== 'review' && STAGES.find(s=>s.id===ses.stage).boss;
   $('bossRow').classList.toggle('on', !!isBoss);
   if (window.Boss) Boss.reset();
@@ -594,7 +596,12 @@ function renderDots(){
 }
 function nextQuestion(){
   const ses = S.session;
-  if (ses.i >= ses.queue.length){ if (bossOn()) Boss.victory(finishStage); else finishStage(); return; }
+  if (ses.i >= ses.queue.length){
+    if (bossOn()) Boss.victory(finishStage);
+    else if (window.SentenceGame && SentenceGame.wants(ses)){ Q = null; SentenceGame.start(); }   // 단어 다음 문장 라운드
+    else finishStage();
+    return;
+  }
   renderDots();
   const target = ses.queue[ses.i];
   let pool = stagePool(ses.stage);
@@ -686,7 +693,8 @@ $('quitBtn').onclick = () => {
 let lastStage = null;
 function finishStage(){
   const ses = S.session; Q = null;
-  const r = ses.first / ses.queue.length;
+  const sent = ses.sent;   // 문장 라운드를 했으면 단어와 합쳐서 별을 매겨요
+  const r = (ses.first + (sent ? sent.first : 0)) / (ses.queue.length + (sent ? sent.n : 0));
   const stars = r >= 0.9 ? 3 : r >= 0.7 ? 2 : 1;
   const bonus = stars * 5; ses.coins += bonus; S.coins += bonus;
   lastStage = ses.stage;
@@ -706,6 +714,7 @@ function finishStage(){
   $('rTitle').textContent = isBoss ? `${bossSt.icon} ${bossSt.name} 클리어!` : ses.stage === 'review' ? '🔁 복습 완료!' : stars === 3 ? '완벽해요! 🎉' : '스테이지 클리어! 🎉';
   $('rStars').innerHTML = [0,1,2].map(i => `<span>${i < stars ? '⭐' : '☆'}</span>`).join('');
   $('rStats').innerHTML = `<span class="pill">🎯 한 번에 ${ses.first}/${ses.queue.length}</span>
+    ${sent ? `<span class="pill">📜 문장 ${sent.first}/${sent.n}</span>` : ''}
     <span class="pill">⭐ ${ses.score}점</span><span class="pill">🔥 최고 ${ses.maxCombo}콤보</span>
     <span class="pill">🪙 +${ses.coins}</span>`;
   let h = reward ? Boss.rewardHtml(reward) : '';
@@ -969,5 +978,6 @@ renderHome();
 <script src="shop.js"></script>
 <script src="math-hint.js"></script>
 <script src="math-game.js"></script>
+<script src="sentence-game.js"></script>
 </body>
 </html>
