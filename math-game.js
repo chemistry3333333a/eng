@@ -132,7 +132,7 @@ function onStage(id, open){
 function map(){
   MathStages.ensure(S);
   $('mWhoTxt').textContent = S.name;
-  Avatar.render($('mWhoAv'), {size:'s'});
+  Avatar.render($('mWhoAv'), {size:'s', bg:true, sleepy:true});
   $('mWhoAv').onclick = () => window.Shop && Shop.open('body');
   $('mLvlTxt').textContent = `Lv.${level()} · 다음 레벨까지 ${100 - S.xp % 100} XP`;
   $('mXpFill').style.width = (S.xp % 100) + '%';
@@ -283,7 +283,7 @@ function tap(el){
     document.querySelectorAll('#mField .mon').forEach(m => { if (m !== el) m.classList.add('fade'); });
     floatText(el, c ? `+${pts} 💎+${c}` : `+${pts}`);
     if (boss) Boss.onCorrect(el, {first, fast, combo:s.combo, last: s.i >= s.queue.length});
-    Avatar.react($('avPalM'), 'cheer');
+    Avatar.react($('avPalM'), 'cheer', {combo: s.combo});
     $('mStatus').innerHTML = `<span class="answer">${ansHtml(p)}</span>` +
       (first && s.combo >= 2 ? `<span class="combo">🔥 ${s.combo} 콤보!</span>` : '');
     if (level() > lvBefore) setTimeout(() => { toast(`🎉 레벨 업! Lv.${level()}`, 2000); sfxWin(); }, 600);
@@ -341,7 +341,7 @@ function finish(){
   if (window.Boss) Boss.reset();
 
   const st = stageOf(s.stage);
-  Avatar.render($('mAvRes'), {size:'m', pose:'cheer', pet:true});
+  Avatar.render($('mAvRes'), {size:'m', pose:'cheer', pet:true, mood: stars === 3 || isBoss(s.stage) ? 'love' : 'smile'});
   $('mrTitle').textContent = isBoss(s.stage) ? `${st.icon} ${st.name} 클리어!` : stars === 3 ? '완벽해요! 🎉' : '스테이지 클리어! 🎉';
   $('mrStars').innerHTML = [0, 1, 2].map(i => `<span>${i < stars ? '⭐' : '☆'}</span>`).join('');
   $('mrStats').innerHTML = `<span class="pill">🎯 한 번에 ${s.first}/${n}</span>

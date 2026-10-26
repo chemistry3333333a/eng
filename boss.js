@@ -337,7 +337,7 @@ function attack(){
   setTimeout(() => {
     shake(); boom();
     const f = document.createElement('div'); f.className = 'bx-flash'; document.body.appendChild(f); setTimeout(() => f.remove(), 700);
-    s.hearts--; Avatar.react(palEl(), 'hurt');
+    s.hearts--; Avatar.react(palEl(), 'hurt', {boss:true});
     if (s.hearts <= 0 && !s.revived){            // 게임오버 대신 요정이 한 번 살려 줘요
       s.hearts = 3; s.revived = true;
       setTimeout(() => toast('🧚 요정이 하트를 채워 줬어요! 포기하지 마!', 2200), 300);

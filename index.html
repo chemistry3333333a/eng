@@ -486,7 +486,7 @@ $('continueBtn').onclick = () => {
 /* ================== 지도 ================== */
 function renderMap(){
   $('whoTxt').textContent = S.name;
-  Avatar.render($('whoAv'), {size:'s'});
+  Avatar.render($('whoAv'), {size:'s', bg:true, sleepy:true});
   $('whoAv').onclick = () => window.Shop && Shop.open('body');
   $('lvlTxt').textContent = `Lv.${level()} · 다음 레벨까지 ${100 - S.xp % 100} XP`;
   $('xpFill').style.width = (S.xp % 100) + '%';
@@ -651,7 +651,7 @@ function tapMonster(el){
     floatText(el, `+${pts}`);
     if (bossOn()) Boss.onCorrect(el, {first, fast, combo:ses.combo, last: ses.i >= ses.queue.length});
     if (window.Boss) Boss.petCheer();
-    Avatar.react($('avPal'), 'cheer');
+    Avatar.react($('avPal'), 'cheer', {combo: ses.combo});
     const info = WORDS[Q.target];
     $('status').innerHTML = `<span class="answer">${info.e} <b>${info.w}</b> = ${info.k}</span>` +
       (first && ses.combo >= 2 ? `<span class="combo">🔥 ${ses.combo} 콤보!</span>` : '');
@@ -702,7 +702,7 @@ function finishStage(){
   if (window.Boss) Boss.reset();
 
   const bossSt = isBoss && STAGES.find(s=>s.id===ses.stage);
-  Avatar.render($('avRes'), {size:'m', pose:'cheer', pet:true});
+  Avatar.render($('avRes'), {size:'m', pose:'cheer', pet:true, mood: stars === 3 || isBoss ? 'love' : 'smile'});
   $('rTitle').textContent = isBoss ? `${bossSt.icon} ${bossSt.name} 클리어!` : ses.stage === 'review' ? '🔁 복습 완료!' : stars === 3 ? '완벽해요! 🎉' : '스테이지 클리어! 🎉';
   $('rStars').innerHTML = [0,1,2].map(i => `<span>${i < stars ? '⭐' : '☆'}</span>`).join('');
   $('rStats').innerHTML = `<span class="pill">🎯 한 번에 ${ses.first}/${ses.queue.length}</span>
@@ -909,7 +909,7 @@ function tapCard(el){
     P.score += pts; S.xp += xp; P.coins += coin; S.coins += coin;
     P.marks[P.i] = first; P.i++;
     save();
-    sfxGood(); Avatar.react($('avPar'), 'cheer'); el.classList.add('right'); floatText(el, `+${pts}`);
+    sfxGood(); Avatar.react($('avPar'), 'cheer', {combo: P.combo}); el.classList.add('right'); floatText(el, `+${pts}`);
     $('pStatus').innerHTML = `<span class="combo">Case closed! 🔎</span>` + (first && P.combo >= 2 ? `<span class="combo">🔥 ${P.combo}</span>` : '') + reveal();
     setTimeout(() => speak('Case closed!'), 250);
     if (level() > lvBefore) setTimeout(() => { toast(`🎉 레벨 업! Lv.${level()}`, 2000); sfxWin(); }, 600);
@@ -949,7 +949,7 @@ function finishParrot(){
     <span class="pill">⭐ ${P.score}점</span><span class="pill">🔥 최고 ${P.maxCombo}콤보</span>
     <span class="pill">🪙 +${P.coins}</span><span class="pill">🏆 최고 ${S.parrot.best}점</span>`;
   P = null;
-  Avatar.render($('avPRes'), {size:'m', pose:'cheer', pet:true});
+  Avatar.render($('avPRes'), {size:'m', pose:'cheer', pet:true, mood: stars === 3 ? 'love' : 'smile'});
   show('pResult'); sfxWin();
   setTimeout(() => speak(stars === 3 ? 'Perfect! You are amazing!' : 'Great job!'), 500);
 }
