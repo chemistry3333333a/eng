@@ -1,6 +1,6 @@
 /* =====================================================================
    워드 아일랜드 · 캐릭터 로직 (구매·장착·잠금·특가·세이브 보정)
-   - 그리기는 따로 해요. 여기는 계산과 저장만!
+   - 그림(SVG)은 avatar-art.js 가 만들고, 여기는 계산·저장과 화면에 붙이기만 해요
    - 전역 S, save, today, level 은 함수가 불릴 때만 읽어요 (로드 시점엔 DOM·S 를 안 건드려요)
    ===================================================================== */
 (function(){
@@ -13,19 +13,10 @@ const byId = id => {
 };
 // 무료 캐릭터(price 0)는 늘 가진 것으로 쳐요
 const ownsIn = (s, id) => s.owned.includes(id) || BODIES.some(b => b.id === id && b.price === 0);
-// 슬롯별 위치·크기 (몸 이모지 크기 1em 기준. x: 가운데=0, 오른쪽 +, y: 위쪽 기준 아래로 +)
-const LAYOUT = {
-  box:  {w:1.3, h:1.3},                           // 캐릭터 상자 크기
-  body: {x:0,     y:0.12, s:1},
-  back: {x:0,     y:0.12, s:1.15},                // 몸 뒤, 살짝 크게
-  face: {x:0,     y:0.62, s:0.5},                 // 얼굴 중앙
-  hat:  {x:0,     y:-0.4, s:0.6},                 // 머리 위
-  hand: {x:0.6,   y:1.0,  s:0.45},                 // 오른쪽 아래
-  fx:   {x:-0.55, y:0.1,  s:0.35},                 // 몸 옆에서 반짝
-  pet:  {x:1.05,  y:0.85, s:0.5},                // 캐릭터 오른쪽 아래
-};
 const SIZES = {s:56, m:96, l:160};
 const POSE_MS = {cheer:700, hurt:500, attack:450};
+const MOOD_MS = 1000;     // 반응 표정이 머무는 시간 (자세 움직임보다 조금 길게)
+const SLEEP_MS = 20000;   // 이만큼 아무 입력이 없으면 졸려요
 const GIFT_MAX = 30;      // 첫 선물로 고를 수 있는 최대 가격
 const DEAL_RATE = 0.7;    // 오늘의 특가 30% 할인
 const QUIZ_RATE = 0.9;    // 퀴즈 보너스 10% 할인
@@ -146,61 +137,92 @@ function claimGift(id){
   S.avatar.equip[it.slot] = id; S.shop.freeGiven = true; save(); return true;
 }
 
-// ---- 그리기 ----
+// ---- 그리기 (그림은 avatar-art.js 의 AvatarArt) ----
 let styled = false;
 function injectStyle(){
   if (styled || typeof document === 'undefined') return;
   styled = true;
-  const L = LAYOUT, lay = (k, z) => `.av-${k}{z-index:${z};left:calc(50% + ${L[k].x}em);top:${L[k].y}em;font-size:${L[k].s}em;}`;
   const st = document.createElement('style');
   st.textContent = `
-.av{position:relative;display:inline-block;vertical-align:middle;width:${L.box.w}em;height:${L.box.h}em;line-height:1;pointer-events:none;user-select:none;flex:none;}
-.av-haspet{margin-right:.7em;}   /* 펫이 상자 밖으로 나오니 자리를 확보 */
+.av{position:relative;display:inline-block;vertical-align:middle;width:1.25em;height:1.4em;line-height:1;pointer-events:none;user-select:none;flex:none;}
+.av>svg{display:block;width:100%;height:100%;overflow:visible;}
 .av-s{font-size:${SIZES.s}px}.av-m{font-size:${SIZES.m}px}.av-l{font-size:${SIZES.l}px}
-.av>span{position:absolute;transform:translateX(-50%);white-space:nowrap;}
-${lay('body',2)}${lay('back',1)}${lay('face',3)}${lay('hat',4)}${lay('hand',5)}${lay('fx',6)}${lay('pet',2)}
-.av-fx{animation:avTwinkle 1.6s ease-in-out infinite;}
-.av-burst{position:absolute;z-index:7;left:50%;top:40%;font-size:.4em;font-style:normal;animation:avBurst .8s ease-out forwards;}
-.av-idle{animation:avFloat 2s ease-in-out infinite;}
+.av-haspet{margin-right:.45em;}   /* 펫이 상자 밖으로 나오니 자리를 확보 */
+.av-pet{position:absolute;right:-.42em;bottom:.08em;font-size:.42em;}
+.av-burst{position:absolute;left:50%;top:30%;width:.45em;height:.45em;animation:avBurst .8s ease-out forwards;}
+.av-burst svg{width:100%;height:100%;}
 .av-cheer{animation:avJump .7s ease-out;}
 .av-hurt{animation:avShake .5s linear;}
 .av-attack{animation:avPunch .45s ease-out;}
-@keyframes avFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-.05em)}}
 @keyframes avJump{0%,100%{transform:translateY(0)}40%{transform:translateY(-.3em) scale(1.05)}}
 @keyframes avShake{0%,100%{transform:translateX(0)}20%{transform:translateX(-.07em)}40%{transform:translateX(.07em)}60%{transform:translateX(-.05em)}80%{transform:translateX(.05em)}}
 @keyframes avPunch{0%,100%{transform:translateX(0)}40%{transform:translateX(.25em)}}
-@keyframes avTwinkle{0%,100%{opacity:.5;transform:translateX(-50%) scale(.85)}50%{opacity:1;transform:translateX(-50%) scale(1.1)}}
-@keyframes avBurst{0%{opacity:1;transform:translate(-50%,0) scale(.6)}100%{opacity:0;transform:translate(-50%,-1.4em) scale(1.6)}}`;
+@keyframes avBurst{0%{opacity:1;transform:translate(-50%,0) scale(.6)}100%{opacity:0;transform:translate(-50%,-1.4em) scale(1.6)}}
+${AvatarArt.css}`;
   document.head.appendChild(st);
 }
-function render(el, {size = 'm', pose = 'idle', pet = false, preview = null, body = null} = {}){
+// 요소에 붙여 둔 상태(el._av)로 다시 그려요. react 와 졸림이 표정만 바꿔 다시 그릴 때 써요
+function draw(el, mood, pose, burst){
+  const o = el._av, b = BODIES.some(x => x.id === o.body) ? o.body : (S.avatar.body || 'kid1');
+  const eq = {...S.avatar.equip, ...(o.preview || {})};
+  const p = o.pet && PETS[S.petOn];
+  const fx = burst && eq.effect && AvatarArt.hasItem(eq.effect) ? `<i class="av-burst">${AvatarArt.thumb(eq.effect)}</i>` : '';
+  el.innerHTML = `<div class="av av-${o.size} av-${pose}${p ? ' av-haspet' : ''}">`
+    + AvatarArt.character({body:b, equip:eq, mood, bg:o.bg})
+    + (p ? `<span class="av-pet">${p[0]}</span>` : '') + fx + `</div>`;
+}
+function render(el, {size = 'm', pose = 'idle', pet = false, preview = null, body = null, mood = 'base', bg, sleepy = false} = {}){
+  if (!el) return;
   injectStyle();
   if (!SIZES[size]) size = 'm';
-  const eq = {...S.avatar.equip, ...(preview || {})};
-  const b = BODIES.find(x => x.id === (body || S.avatar.body)) || BODIES[0];
-  const layer = (cls, ch) => ch ? `<span class="av-${cls}">${ch}</span>` : '';
-  const slotIcon = sl => { const it = byId(eq[sl]); return it && it.slot === sl ? it.icon : ''; };
-  const p = pet && PETS[S.petOn];
-  el.innerHTML = `<div class="av av-${size} av-${pose}${p ? ' av-haspet' : ''}">` +
-    layer('back', slotIcon('back')) + layer('body', b.icon) + layer('face', slotIcon('face')) +
-    layer('hat', slotIcon('hat')) + layer('hand', slotIcon('hand')) + layer('fx', slotIcon('effect')) +
-    layer('pet', p ? p[0] : '') + `</div>`;
+  clearTimeout(el._avT);
+  el._av = {size, pet, preview, body, mood, bg: bg === undefined ? size !== 's' : !!bg, sleepy};
+  if (sleepy){ sleepers.add(el); armSleep(); } else sleepers.delete(el);
+  draw(el, mood, pose);
 }
-// 자세 애니메이션을 한 번 재생하고 idle 로 돌아와요
-function react(el, kind){
-  const root = el && el.querySelector('.av');
-  if (!root || !POSE_MS[kind]) return;
-  const sz = [...root.classList].find(c => /^av-[sml]$/.test(c));
-  clearTimeout(root._avT);
-  root.className = `av ${sz}${root.classList.contains('av-haspet') ? ' av-haspet' : ''}`; void root.offsetWidth;   // 애니메이션 재시작
-  root.classList.add('av-' + kind);
-  const it = byId(S.avatar.equip.effect);
-  if (kind === 'cheer' && it){
-    const o = document.createElement('i');
-    o.className = 'av-burst'; o.textContent = it.icon;
-    root.appendChild(o); setTimeout(() => o.remove(), 850);
+// 게임 상황 → 표정
+function moodFor(kind, {combo = 0, boss = false} = {}){
+  if (kind === 'cheer') return combo >= 3 ? 'star' : 'smile';
+  if (kind === 'hurt') return boss ? 'teary' : 'wow';
+  if (kind === 'attack') return 'wink';
+  return AvatarArt.MOODS.includes(kind) ? kind : 'base';
+}
+// 반응: 자세 움직임(cheer/hurt/attack)과 표정을 잠깐 보여 주고 render 때 표정으로 돌아와요
+function react(el, kind, opts){
+  if (!el || !el._av) return;
+  clearTimeout(el._avT);
+  el._av.asleep = false;
+  draw(el, moodFor(kind, opts), POSE_MS[kind] ? kind : 'idle', kind === 'cheer');
+  el._avT = setTimeout(() => draw(el, el._av.mood, 'idle'), MOOD_MS);
+}
+
+// 졸림: sleepy 로 그린 캐릭터는 SLEEP_MS 동안 입력이 없으면 잠들고, 누르면 깨요
+const sleepers = new Set();
+let sleepT = null, listening = false;
+function armSleep(){
+  if (!listening && typeof document !== 'undefined'){
+    listening = true;
+    const wake = () => {
+      sleepers.forEach(el => { if (el._av && el._av.asleep){ el._av.asleep = false; draw(el, el._av.mood, 'idle'); } });
+      armSleep();
+    };
+    document.addEventListener('pointerdown', wake, true);
+    document.addEventListener('keydown', wake, true);
   }
-  root._avT = setTimeout(() => { root.classList.remove('av-' + kind); root.classList.add('av-idle'); }, POSE_MS[kind]);
+  clearTimeout(sleepT);
+  sleepT = setTimeout(() => {
+    sleepers.forEach(el => {
+      if (el.isConnected === false || !el._av || !el._av.sleepy){ sleepers.delete(el); return; }
+      el._av.asleep = true; draw(el, 'sleep', 'idle');
+    });
+  }, SLEEP_MS);
+}
+// 상점 칸·퀴즈용 작은 그림 (그림이 없으면 이모지)
+function thumb(id){
+  const it = byId(id);
+  if (!it) return '';
+  if (it.slot === 'body') return AvatarArt.hasBody(id) ? AvatarArt.face(id) : it.icon;
+  return AvatarArt.hasItem(id) ? AvatarArt.thumb(id) : it.icon;
 }
 
 // 영어 그림 퀴즈의 오답 후보: 영어 아이템만 (수학 아이템은 제외)
@@ -214,5 +236,5 @@ function quizWrong(it, shuffle = a => a){
 }
 
 window.Avatar = {quizWrong, ensure, item: byId, owns, isUnlocked, lockText, wallet, deal, priceOf, canBuy, buy,
-  equip, unequip, setBody, equipped, collection, perks, giftChoices, claimGift, render, react};
+  equip, unequip, setBody, equipped, collection, perks, giftChoices, claimGift, render, react, moodFor, thumb};
 })();

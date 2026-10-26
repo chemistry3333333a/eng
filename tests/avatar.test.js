@@ -4,9 +4,22 @@ const vm = require('vm');
 
 // 매 테스트마다 새 컨텍스트: lv 는 1 에서 시작해 레벨 잠금이 실제로 잠겨 있게 해요
 function mk(opts = {}) {
-  const env = {day: '2026-1-1', lv: 1, saves: 0};
+  const env = {day: '2026-1-1', lv: 1, saves: 0, now: 0, timers: []};
   const S = {coins: 0, stages: {}, words: {}, trophies: {}, pets: [], math: {coins: 0, trophies: {}}};
-  const ctx = load(['items.js', 'avatar.js'], {S, save() { env.saves++; }, today: () => env.day, level: () => env.lv});
+  // 가짜 타이머: env.tick(ms) 로 시간을 흘려요
+  let tid = 0;
+  const setTimeout = (fn, ms) => { env.timers.push({id: ++tid, at: env.now + ms, fn}); return tid; };
+  const clearTimeout = id => { env.timers = env.timers.filter(t => t.id !== id); };
+  env.tick = ms => {
+    const end = env.now + ms;
+    for (;;) {
+      const t = env.timers.filter(x => x.at <= end).sort((a, b) => a.at - b.at)[0];
+      if (!t) break;
+      env.timers = env.timers.filter(x => x !== t); env.now = t.at; t.fn();
+    }
+    env.now = end;
+  };
+  const ctx = load(['items.js', 'avatar-art.js', 'avatar.js'], {S, save() { env.saves++; }, today: () => env.day, level: () => env.lv, setTimeout, clearTimeout});
   const Avatar = ctx.Avatar;
   const ITEMS = vm.runInContext('ITEMS', ctx);
   Avatar.ensure(S);
@@ -229,4 +242,60 @@ test('deal and gift never offer bodies', () => {
   const {Avatar} = mk({pinDeal:false});
   for (const c of Avatar.giftChoices()) assert.notEqual(c.slot, 'body');
   const d = Avatar.deal(); assert.ok(!d || Avatar.item(d.id).slot !== 'body');
+});
+
+// ---- 그리기·표정 ----
+const plain = s => s.replace(/ id="[^"]+"|url\(#[^)]+\)/g, '');
+test('moodFor maps game events', () => {
+  const {Avatar} = mk();
+  assert.equal(Avatar.moodFor('cheer'), 'smile'); assert.equal(Avatar.moodFor('cheer', {combo:3}), 'star');
+  assert.equal(Avatar.moodFor('hurt'), 'wow'); assert.equal(Avatar.moodFor('hurt', {boss:true}), 'teary');
+  assert.equal(Avatar.moodFor('attack'), 'wink'); assert.equal(Avatar.moodFor('love'), 'love'); assert.equal(Avatar.moodFor('zzz'), 'base');
+});
+test('render draws SVG with the body and mood', () => {
+  const {S, Avatar, ctx} = mk(); S.avatar.body = 'cat'; const el = {innerHTML:''};
+  Avatar.render(el, {mood:'love'});
+  assert.match(el.innerHTML, /<svg/); assert.match(el.innerHTML, /class="av /);
+  assert.ok(plain(el.innerHTML).includes(plain(ctx.AvatarArt.character({body:'cat', equip:S.avatar.equip, mood:'love', bg:true}))));
+});
+test('render uses preview equips and bg only above size s', () => {
+  const {S, Avatar} = mk(); S.owned.push('bg_night'); S.avatar.equip.bg = 'bg_night';
+  const a = {innerHTML:''}, b = {innerHTML:''};
+  Avatar.render(a, {size:'s'}); Avatar.render(b, {size:'m'});
+  assert.doesNotMatch(a.innerHTML, /clipPath/); assert.match(b.innerHTML, /clipPath/);
+  const c = {innerHTML:''}; Avatar.render(c, {size:'s', bg:true}); assert.match(c.innerHTML, /clipPath/);
+});
+test('render skips equips without art', () => {
+  const {S, Avatar} = mk(); S.owned.push('ghost'); S.avatar.equip.hat = 'ghost'; const el = {innerHTML:''};
+  assert.doesNotThrow(() => Avatar.render(el, {})); assert.match(el.innerHTML, /<svg/);
+});
+test('react shows the mood, then returns to the render mood', () => {
+  const {Avatar, env} = mk(); const el = {innerHTML:''}, base = {innerHTML:''}, wow = {innerHTML:''};
+  Avatar.render(el, {}); Avatar.render(base, {}); Avatar.render(wow, {mood:'wow'});
+  Avatar.react(el, 'hurt');
+  assert.match(el.innerHTML, /av-hurt/); assert.equal(plain(el.innerHTML).replace('av-hurt', 'av-idle'), plain(wow.innerHTML));
+  env.tick(1000); assert.equal(plain(el.innerHTML), plain(base.innerHTML));
+});
+test('rapid reacts settle to base mood', () => {
+  const {Avatar, env} = mk(); const el = {innerHTML:''}, base = {innerHTML:''};
+  Avatar.render(el, {}); Avatar.render(base, {});
+  for (let i = 0; i < 5; i++) { Avatar.react(el, 'cheer', {combo:i}); env.tick(100); }
+  assert.notEqual(plain(el.innerHTML), plain(base.innerHTML));
+  env.tick(1000); assert.equal(plain(el.innerHTML), plain(base.innerHTML)); assert.equal(env.timers.length, 0);
+});
+test('react on an element that was never rendered is ignored', () => {
+  const {Avatar} = mk(); assert.doesNotThrow(() => Avatar.react({innerHTML:''}, 'cheer')); assert.doesNotThrow(() => Avatar.react(null, 'cheer'));
+});
+test('sleepy avatar falls asleep after 20s', () => {
+  const {Avatar, env} = mk(); const el = {innerHTML:''}, zz = {innerHTML:''};
+  Avatar.render(el, {sleepy:true}); Avatar.render(zz, {mood:'sleep'});
+  env.tick(19999); assert.notEqual(plain(el.innerHTML), plain(zz.innerHTML));
+  env.tick(1); assert.equal(plain(el.innerHTML), plain(zz.innerHTML));
+});
+test('thumb gives SVG for items and bodies', () => {
+  const {Avatar} = mk(); assert.match(Avatar.thumb('cap'), /^<svg/); assert.match(Avatar.thumb('penguin'), /^<svg/);
+});
+test('thumb falls back to the emoji icon', () => {
+  const {Avatar, ctx} = mk(); ctx.AvatarArt.hasItem = () => false; ctx.AvatarArt.hasBody = () => false;
+  assert.equal(Avatar.thumb('cap'), '🧢'); assert.equal(Avatar.thumb('penguin'), '🐧');
 });
