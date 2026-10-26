@@ -1,6 +1,7 @@
 <!doctype html>
 <meta charset="utf-8"><title>avatar preview</title>
 <style>body{font-family:sans-serif;background:#fff8e7;margin:12px}.row{display:flex;gap:6px;align-items:flex-end;flex-wrap:wrap;margin:6px 0}.cell{text-align:center;font-size:11px;width:84px}.cell svg{width:84px;display:block}button{font-size:14px;padding:4px 10px}h3{margin:16px 0 4px}</style>
+<h3>아이템 썸네일 · 토끼/펭귄/드래곤에 입히기</h3><div id="items"></div>
 <h3>캐릭터 15종 × 표정 9가지</h3><div id="moods"></div>
 <script src="../items.js"></script><script src="../avatar-art.js"></script>
 <script>
@@ -11,5 +12,10 @@ BODIES.forEach(b => {
   const r = row('moods');
   cell(r, AvatarArt.face(b.id), b.name);
   AvatarArt.MOODS.forEach(m => cell(r, AvatarArt.character({body:b.id, mood:m}), m));
+});
+ITEMS.forEach(it => {
+  const r = row('items');
+  cell(r, AvatarArt.thumb(it.id), it.id);
+  ['bunny','penguin','dragon','fox'].forEach(b => cell(r, AvatarArt.character({body:b, equip:{[it.slot]: it.id}, bg:true, mood: it.slot === 'bg' ? 'smile' : 'base'}), b));
 });
 </script>
