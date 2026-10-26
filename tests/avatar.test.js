@@ -25,7 +25,7 @@ test('ensure fills defaults on an old save and keeps existing fields', () => {
   const {Avatar} = mk();
   const S = {name:'민준', coins:50, xp:120, stages:{1:{stars:2}}, words:{}, petOn:10, pets:[10]};
   Avatar.ensure(S);
-  assert.deepEqual(S.avatar, {body:'kid1', equip:{hat:null,face:null,hand:null,back:null,effect:null}});
+  assert.deepEqual(S.avatar, {body:'kid1', equip:{hat:null,face:null,hand:null,back:null,effect:null,bg:null}});
   assert.deepEqual(S.owned, []); assert.deepEqual(S.shop, {freeGiven:false, dealDay:'', dealId:''});
   assert.equal(S.coins, 50); assert.equal(S.petOn, 10); assert.deepEqual(S.stages, {1:{stars:2}});
 });
