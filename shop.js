@@ -4,9 +4,10 @@
    - 아이템을 누르면 미리보기(피팅)만 바뀌고, 사야 내 것이 돼요
    ===================================================================== */
 (() => {
-const BASE_TABS = ['hat','face','hand','back','effect','body'];
+const BASE_TABS = ['body','hat','face','hand','back','effect','bg'];
 const tabs = () => (cur === 'eng' && Avatar.deal() ? ['deal'] : []).concat(BASE_TABS);   // 특가가 없으면 특가 탭을 숨겨요
-const TAB_NAME = {deal:'특가', hat:'모자', face:'얼굴', hand:'손', back:'등', effect:'효과', body:'몸'};
+const TAB_NAME = {deal:'특가', body:'캐릭터', hat:'모자', face:'얼굴', hand:'손', back:'등', effect:'효과', bg:'배경'};
+const PREVIEW_MOODS = ['smile','wink','wow','star','love','tongue'];   // 미리보기 캐릭터를 누르면 나오는 표정
 const UNLOCK_ICON = u => u.level ? '⭐' : (u.trophies || u.mathTrophies) ? '🏆' : '📚';
 
 const css = `
@@ -17,13 +18,18 @@ const css = `
 #shop .sp-cur button{flex:1;border:0;border-radius:16px;padding:6px 4px;background:#fff;font-size:16px;box-shadow:0 3px 0 rgba(0,0,0,.1);}
 #shop .sp-cur button.on{background:#8b5cf6;color:#fff;box-shadow:0 3px 0 #6d28d9;}
 #shop .sp-prev{flex:none;height:230px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.7);border-radius:28px;width:100%;max-width:640px;}
-#shop .sp-tabs{display:flex;gap:6px;width:100%;max-width:640px;}
-#shop .sp-tab{flex:1;min-width:0;border:0;border-radius:16px;padding:8px 2px;background:#fff;font-size:15px;box-shadow:0 3px 0 rgba(0,0,0,.1);}
+#shop .sp-top h2 small{font-size:15px;color:#7c3aed;margin-left:6px;white-space:nowrap;}
+#shop .sp-prev{cursor:pointer;}
+#shop .sp-tabs{display:flex;gap:6px;width:100%;max-width:640px;overflow-x:auto;padding-bottom:4px;flex:none;}
+#shop .sp-tab{flex:1 0 54px;min-width:0;border:0;border-radius:16px;padding:8px 2px;background:#fff;font-size:15px;box-shadow:0 3px 0 rgba(0,0,0,.1);white-space:nowrap;}
 #shop .sp-tab b{display:block;font-size:24px;font-weight:normal;}
 #shop .sp-tab.on{background:#3b82f6;color:#fff;box-shadow:0 3px 0 #1d4ed8;}
 #shop .sp-grid{flex:1;min-height:0;width:100%;max-width:640px;overflow-y:auto;overflow-x:hidden;display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px;align-content:start;padding:2px;}
 #shop .sp-cell{border:3px solid transparent;border-radius:18px;background:#fff;padding:6px 2px;box-shadow:0 3px 0 rgba(0,0,0,.1);display:flex;flex-direction:column;align-items:center;gap:2px;min-width:0;}
-#shop .sp-cell .ci{font-size:38px;line-height:1.1;}
+#shop .sp-cell .ci{font-size:38px;line-height:1.1;width:56px;height:56px;display:flex;align-items:center;justify-content:center;}
+#shop .sp-cell .ci svg{width:56px;height:56px;}
+#shop .sp-cell.legend{border-color:#f5c542;background:#fffbea;}
+#shop .sp-cell.legend::after{content:'✨ 전설';position:absolute;top:-7px;left:-4px;background:#f5c542;color:#7a5200;font-size:12px;font-weight:bold;border-radius:10px;padding:1px 6px;}
 #shop .sp-cell .cw{font-size:16px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 #shop .sp-cell .cs{font-size:14px;color:#475569;}
 #shop .sp-cell{position:relative;}
@@ -56,12 +62,14 @@ const css = `
 #shopModal .opt.sel{border-color:#f97316;background:#fff7ed;}
 #shopModal .opt.mq{font-size:34px;padding:10px 18px;}
 #shopModal .opt.big{font-size:64px;padding:12px 22px;}
+#shopModal .opt svg{display:block;width:64px;height:64px;margin:0 auto;}
+#shopModal .opt.big svg{width:84px;height:84px;}
 `;
 const st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
 
 const sec = document.createElement('section');
 sec.id = 'shop'; sec.className = 'screen';
-sec.innerHTML = `<div class="sp-top"><button class="icon" id="shopBack">⬅️</button><h2>🛍️ 상점</h2><div class="pill" id="shopCoin"></div></div>
+sec.innerHTML = `<div class="sp-top"><button class="icon" id="shopBack">⬅️</button><h2>🛍️ 상점<small id="shopCol"></small></h2><div class="pill" id="shopCoin"></div></div>
   <div class="sp-cur" id="shopCur"></div>
   <div class="sp-prev" id="shopPrev"></div>
   <div class="sp-tabs" id="shopTabs"></div>
@@ -88,8 +96,9 @@ sBtn.style.cssText = 'background:#ec4899;box-shadow:0 6px 0 #be185d';
 $('setBtn').before(sBtn);
 
 /* ---------- 상태 ---------- */
-let cur = 'eng', tab = 'hat', tryOn = {}, sel = null, busy = false;
+let cur = 'eng', tab = 'body', tryOn = {}, tryBody = null, sel = null, busy = false, moodNext = null;
 const find = id => Avatar.item(id);
+const nameOf = it => it.slot === 'body' ? it.name : it.word;
 const curOf = it => it.cur === 'math' ? 'math' : 'eng';
 const coinIcon = c => c === 'math' ? '💎' : '🪙';
 
@@ -99,17 +108,20 @@ function refresh(){
   [['eng','🔤 영어 상점'],['math','🔢 수학 상점']].forEach(([c, name]) => {
     const b = document.createElement('button');
     b.className = c === cur ? 'on' : ''; b.textContent = name;
-    b.onclick = () => { if (c === cur) return; cur = c; tab = 'hat'; tryOn = {}; sel = null; closeModal(); refresh(); };
+    b.onclick = () => { if (c === cur) return; cur = c; tab = 'body'; tryOn = {}; tryBody = null; sel = null; closeModal(); refresh(); };
     $('shopCur').appendChild(b);
   });
-  Avatar.render($('shopPrev'), {size:'l', pet:true, preview:tryOn});
-  if (tab === 'deal' && !tabs().includes('deal')) tab = 'hat';
+  const col = Avatar.collection();
+  $('shopCol').textContent = `캐릭터 ${col.have}/${col.total}`;
+  Avatar.render($('shopPrev'), {size:'l', pet:true, preview:tryOn, body:tryBody});
+  if (moodNext){ Avatar.react($('shopPrev'), moodNext); moodNext = null; }   // 입어 보기·사기 반응
+  if (tab === 'deal' && !tabs().includes('deal')) tab = 'body';
   $('shopTabs').innerHTML = '';
   tabs().forEach(t => {
     const b = document.createElement('button');
     b.className = 'sp-tab' + (t === tab ? ' on' : '');
     b.innerHTML = `<b>${t === 'body' ? '🧒' : t === 'deal' ? '🏷️' : SLOT_ICON[t]}</b>${TAB_NAME[t]}`;
-    b.onclick = () => { tab = t; tryOn = {}; sel = null; refresh(); };
+    b.onclick = () => { tab = t; tryOn = {}; tryBody = null; sel = null; refresh(); };
     $('shopTabs').appendChild(b);
   });
   drawGrid(); drawBar();
@@ -123,26 +135,32 @@ function drawGrid(){
     b.innerHTML = `${badge ? '<span class="badge">-30%</span>' : ''}<span class="ci">${icon}</span><span class="cw">${word}</span><span class="cs">${status}</span>`;
     b.onclick = fn; g.appendChild(b);
   };
+  const ic = coinIcon(cur);
   if (tab === 'body'){
-    BODIES.forEach(b => cell(S.avatar.body === b.id ? 'worn sel' : '', b.icon, '', S.avatar.body === b.id ? '선택됨' : '무료', () => {
-      if (Avatar.setBody(b.id)){ sfxGood(); refresh(); }
-    }));
+    BODIES.filter(b => curOf(b) === cur).forEach(b => {
+      const it = find(b.id), owned = Avatar.owns(b.id), worn = S.avatar.body === b.id, open = Avatar.isUnlocked(it);
+      const status = worn ? '선택됨' : owned ? '보유' : open ? `${ic}${b.price}` : `🔒${UNLOCK_ICON(b.unlock)}`;
+      cell((worn ? 'worn ' : '') + (!owned && !open ? 'lock ' : '') + (b.legend ? 'legend ' : '') + (sel === b.id ? 'sel' : ''),
+        Avatar.thumb(b.id), b.name, status, () => pick(it));
+    });
     return;
   }
   const d = cur === 'eng' ? Avatar.deal() : null;
   ITEMS.filter(i => curOf(i) === cur && (tab === 'deal' ? d && i.id === d.id : i.slot === tab)).forEach(it => {
     const owned = Avatar.owns(it.id), worn = S.avatar.equip[it.slot] === it.id, open = Avatar.isUnlocked(it);
     const isDeal = !!d && d.id === it.id && !owned;
-    const ic = coinIcon(cur);
     const price = isDeal ? `<s>${ic}${it.price}</s>${ic}${d.price}` : `${ic}${it.price}`;
     const status = worn ? '착용중' : owned ? '보유' : open ? price : `🔒${UNLOCK_ICON(it.unlock)}`;
-    cell((worn ? 'worn ' : '') + (!owned && !open ? 'lock ' : '') + (sel === it.id ? 'sel' : ''), it.icon, it.word, status, () => pick(it), isDeal && open);
+    cell((worn ? 'worn ' : '') + (!owned && !open ? 'lock ' : '') + (sel === it.id ? 'sel' : ''), Avatar.thumb(it.id), it.word, status, () => pick(it), isDeal && open);
   });
 }
 
+// 누르면 미리보기만 바뀌어요 (캐릭터는 몸을, 아이템은 그 칸을 입어 봐요)
 function pick(it){
-  sel = it.id; tryOn = {[it.slot]: it.id};
+  sel = it.id;
+  if (it.slot === 'body'){ tryBody = it.id; tryOn = {}; } else { tryOn = {[it.slot]: it.id}; tryBody = null; }
   if (curOf(it) === 'eng') speak(it.word);
+  moodNext = 'wink';
   refresh();
 }
 
@@ -150,13 +168,17 @@ function drawBar(){
   const bar = $('shopBar'); bar.innerHTML = '';
   const it = sel && find(sel);
   const note = t => { bar.innerHTML = `<span class="hint">${t}</span>`; };
-  if (tab === 'body') return note('마음에 드는 모습을 눌러요!');
-  if (!it) return note('아이템을 눌러서 입어 봐요!');
+  if (!it) return note(tab === 'body' ? '캐릭터를 눌러서 만나 봐요!' : '아이템을 눌러서 입어 봐요!');
   const btn = (label, cls, fn, dis) => {
     const b = document.createElement('button');
     b.className = 'btn ' + cls; b.textContent = label; b.disabled = !!dis;
     if (!dis) b.onclick = fn; bar.appendChild(b);
   };
+  if (Avatar.owns(it.id) && it.slot === 'body'){
+    if (S.avatar.body === it.id) btn('지금 이 캐릭터예요', 'gray', null, true);
+    else btn('이 캐릭터로 바꾸기', 'green', () => act(() => { tryBody = null; Avatar.setBody(it.id); moodNext = 'love'; sfxGood(); }));
+    return;
+  }
   if (Avatar.owns(it.id)){
     if (S.avatar.equip[it.slot] === it.id) btn('벗기', 'gray', () => act(() => { delete tryOn[it.slot]; Avatar.unequip(it.slot); }));
     else btn('입기', 'green', () => act(() => { delete tryOn[it.slot]; Avatar.equip(it.id); sfxGood(); }));
@@ -186,9 +208,11 @@ function doBuy(it){
 function finishBuy(it, opts){
   const r = Avatar.buy(it.id, opts);
   if (!r.ok) return false;
-  delete tryOn[it.slot]; Avatar.equip(it.id);
+  if (it.slot === 'body'){ tryBody = null; Avatar.setBody(it.id); }
+  else { delete tryOn[it.slot]; Avatar.equip(it.id); }
   if (tab === 'deal') tab = it.slot;   // 특가를 샀으면 특가가 새로 뽑히니 그 칸이 있던 탭으로
-  sfxGood(); toast(`${it.icon} ${it.word} 샀어요!`);
+  moodNext = 'love';
+  sfxGood(); toast(`${it.icon} ${nameOf(it)} ${it.slot === 'body' ? '만났어요' : '샀어요'}!`);
   return true;
 }
 // 모달 안에서 사기: 모달을 먼저 닫아 버튼을 없애고(중복 방지), 연타 방지 시간도 걸어요
@@ -258,7 +282,7 @@ function quiz(it){
     mk(p, 'h2', '', '무슨 뜻일까요? 🔊');
     mk(p, 'button', 'btn blue small', '다시 듣기 🔊', () => speak(it.word));
     const row = mk(p, 'div', 'row');
-    choices.forEach(c => mk(row, 'button', 'opt big', c.icon, () => {
+    choices.forEach(c => mk(row, 'button', 'opt big', Avatar.thumb(c.id), () => {
       if (done) return; done = true;
       if (c.id === it.id){ sfxGood(); modalBuy(it, {quiz:true}); return; }
       sfxBad();
@@ -286,7 +310,7 @@ function bodyModal(){
     const draw = () => {
       Avatar.render(pv, {size:'l', body:cur});
       row.innerHTML = '';
-      BODIES.forEach(b => mk(row, 'button', 'opt' + (b.id === cur ? ' sel' : ''), b.icon, () => { cur = b.id; Avatar.setBody(b.id); sfxGood(); draw(); refresh(); }));
+      BODIES.filter(b => b.price === 0).forEach(b => mk(row, 'button', 'opt' + (b.id === cur ? ' sel' : ''), Avatar.thumb(b.id), () => { cur = b.id; Avatar.setBody(b.id); sfxGood(); draw(); refresh(); }));
     };
     draw();
     mk(p, 'button', 'btn green small', '다음', giftModal);
@@ -303,12 +327,12 @@ function giftModal(){
       const it = pickId && find(pickId);
       Avatar.render(pv, {size:'l', preview: it ? {[it.slot]: it.id} : null});
       row.innerHTML = '';
-      Avatar.giftChoices().forEach(c => mk(row, 'button', 'opt' + (c.id === pickId ? ' sel' : ''), `${c.icon}<small>${c.word}</small>`, () => { pickId = c.id; speak(c.word); draw(); }));
+      Avatar.giftChoices().forEach(c => mk(row, 'button', 'opt' + (c.id === pickId ? ' sel' : ''), `${Avatar.thumb(c.id)}<small>${c.word}</small>`, () => { pickId = c.id; speak(c.word); draw(); }));
       bar.innerHTML = '';
       const b = mk(bar, 'button', 'btn green small', '받기', () => {
         if (!pickId || !Avatar.claimGift(pickId)) return;
         const g = find(pickId); closeModal(); sfxWin(); toast(`🎁 ${g.icon} ${g.word} 받았어요!`);
-        tab = g.slot; tryOn = {}; sel = null; refresh();
+        tab = g.slot; tryOn = {}; tryBody = null; sel = null; refresh();
       });
       b.disabled = !pickId;
     };
@@ -318,16 +342,18 @@ function giftModal(){
 
 function open(t, c){
   cur = c === 'math' || c === 'eng' ? c : (S.mode === 'math' ? 'math' : 'eng');
-  if (t === undefined) t = cur === 'eng' && Avatar.deal() ? 'deal' : 'hat';   // 특가가 있으면 특가 탭부터 (영어 상점만)
-  tab = tabs().includes(t) ? t : 'hat'; tryOn = {}; sel = null; busy = false;
+  if (t === undefined) t = cur === 'eng' && Avatar.deal() ? 'deal' : 'body';   // 특가가 있으면 특가 탭부터 (영어 상점만)
+  tab = tabs().includes(t) ? t : 'body'; tryOn = {}; tryBody = null; sel = null; busy = false;
   closeModal(); refresh(); show('shop');
   if (cur === 'eng' && !S.shop.freeGiven) bodyModal();
 }
 function leave(){
-  closeModal(); tryOn = {}; sel = null;
+  closeModal(); tryOn = {}; tryBody = null; sel = null;
   if (S.mode === 'math' && window.MathGame) MathGame.map(); else renderMap();
 }
 sBtn.onclick = () => open();
+// 미리보기 캐릭터를 누르면 여러 표정을 보여 줘요
+$('shopPrev').onclick = () => Avatar.react($('shopPrev'), PREVIEW_MOODS[Math.floor(Math.random() * PREVIEW_MOODS.length)]);
 $('shopBack').onclick = leave;
 
 window.Shop = {open};
