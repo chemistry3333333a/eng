@@ -145,7 +145,8 @@ function injectStyle(){
   const st = document.createElement('style');
   st.textContent = `
 .av{position:relative;display:inline-block;vertical-align:middle;width:1.25em;height:1.4em;line-height:1;pointer-events:none;user-select:none;flex:none;}
-.av>svg{display:block;width:100%;height:100%;overflow:visible;}
+.av-fig{width:100%;height:100%;}
+.av-fig>svg{display:block;width:100%;height:100%;overflow:visible;}
 .av-s{font-size:${SIZES.s}px}.av-m{font-size:${SIZES.m}px}.av-l{font-size:${SIZES.l}px}
 .av-haspet{margin-right:.45em;}   /* 펫이 상자 밖으로 나오니 자리를 확보 */
 .av-pet{position:absolute;right:-.42em;bottom:.08em;font-size:.42em;}
@@ -161,15 +162,25 @@ function injectStyle(){
 ${AvatarArt.css}`;
   document.head.appendChild(st);
 }
-// 요소에 붙여 둔 상태(el._av)로 다시 그려요. react 와 졸림이 표정만 바꿔 다시 그릴 때 써요
-function draw(el, mood, pose, burst){
+// 요소에 붙여 둔 상태(el._av)로 다시 그려요. react 와 졸림은 full 없이 불러서 그림(.av-fig)만 바꿔요
+// (펫 span 은 그대로 둬야 boss.js 의 펫 말풍선·깡총이 살아 있어요)
+function draw(el, mood, pose, burst, full){
   const o = el._av, b = BODIES.some(x => x.id === o.body) ? o.body : (S.avatar.body || 'kid1');
   const eq = {...S.avatar.equip, ...(o.preview || {})};
   const p = o.pet && PETS[S.petOn];
-  const fx = burst && eq.effect && AvatarArt.hasItem(eq.effect) ? `<i class="av-burst">${AvatarArt.thumb(eq.effect)}</i>` : '';
-  el.innerHTML = `<div class="av av-${o.size} av-${pose}${p ? ' av-haspet' : ''}">`
-    + AvatarArt.character({body:b, equip:eq, mood, bg:o.bg})
-    + (p ? `<span class="av-pet">${p[0]}</span>` : '') + fx + `</div>`;
+  const svg = AvatarArt.character({body:b, equip:eq, mood, bg:o.bg});
+  const fx = burst && eq.effect && AvatarArt.hasItem(eq.effect) ? AvatarArt.thumb(eq.effect) : '';
+  const cls = `av av-${o.size} av-${pose}${p ? ' av-haspet' : ''}`;
+  const root = !full && el.querySelector && el.querySelector('.av'), fig = root && el.querySelector('.av-fig');
+  if (fig){
+    root.className = `av av-${o.size}${p ? ' av-haspet' : ''}`; void root.offsetWidth;   // 자세 애니메이션 재시작
+    root.className = cls; fig.innerHTML = svg;
+    if (root.querySelectorAll) root.querySelectorAll('.av-burst').forEach(x => x.remove());
+    if (fx && typeof document !== 'undefined'){ const i = document.createElement('i'); i.className = 'av-burst'; i.innerHTML = fx; root.appendChild(i); }
+    return;
+  }
+  el.innerHTML = `<div class="${cls}"><div class="av-fig">${svg}</div>`
+    + (p ? `<span class="av-pet">${p[0]}</span>` : '') + (fx ? `<i class="av-burst">${fx}</i>` : '') + `</div>`;
 }
 function render(el, {size = 'm', pose = 'idle', pet = false, preview = null, body = null, mood = 'base', bg, sleepy = false} = {}){
   if (!el) return;
@@ -178,7 +189,7 @@ function render(el, {size = 'm', pose = 'idle', pet = false, preview = null, bod
   clearTimeout(el._avT);
   el._av = {size, pet, preview, body, mood, bg: bg === undefined ? size !== 's' : !!bg, sleepy};
   if (sleepy){ sleepers.add(el); armSleep(); } else sleepers.delete(el);
-  draw(el, mood, pose);
+  draw(el, mood, pose, false, true);
 }
 // 게임 상황 → 표정
 function moodFor(kind, {combo = 0, boss = false} = {}){

@@ -411,7 +411,7 @@ function petCheer(){
   const b = document.createElement('span'); b.className = 'pb';
   b.textContent = PET_TALK[Math.floor(Math.random() * PET_TALK.length)];
   pet.appendChild(b);
-  pet.animate([{transform:'translateX(-50%)'}, {transform:'translateX(-50%) translateY(-.6em) rotate(-10deg)', offset:.4}, {transform:'translateX(-50%)'}], 600);
+  pet.animate([{transform:'none'}, {transform:'translateY(-.6em) rotate(-10deg)', offset:.4}, {transform:'none'}], 600);
   setTimeout(() => b.remove(), 1100);
 }
 

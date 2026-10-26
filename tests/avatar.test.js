@@ -299,3 +299,17 @@ test('thumb falls back to the emoji icon', () => {
   const {Avatar, ctx} = mk(); ctx.AvatarArt.hasItem = () => false; ctx.AvatarArt.hasBody = () => false;
   assert.equal(Avatar.thumb('cap'), '🧢'); assert.equal(Avatar.thumb('penguin'), '🐧');
 });
+test('react keeps the pet node and only redraws the figure', () => {
+  const {S, Avatar, env} = mk(); S.petOn = 10;
+  // 아주 작은 가짜 DOM: render 뒤 .av(루트)와 .av-fig(그림) 노드를 돌려줘요
+  const root = {className:''}, fig = {innerHTML:''};
+  const el = {innerHTML:'', querySelector: s => s === '.av' ? root : s === '.av-fig' ? fig : null};
+  Avatar.render(el, {pet:true});
+  assert.match(el.innerHTML, /class="av-pet"/); assert.match(el.innerHTML, /class="av-fig"/);
+  const before = el.innerHTML;
+  Avatar.react(el, 'cheer');
+  assert.equal(el.innerHTML, before);                       // 펫 말풍선이 붙은 노드를 지우지 않아요
+  assert.match(root.className, /av-cheer/); assert.match(fig.innerHTML, /#ff7a8a/);   // 방긋 입
+  env.tick(1000);
+  assert.equal(el.innerHTML, before); assert.match(root.className, /av-idle/); assert.doesNotMatch(fig.innerHTML, /#ff7a8a/);
+});
