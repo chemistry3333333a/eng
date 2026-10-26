@@ -185,3 +185,48 @@ test('English quiz wrong-choice pool only has cur eng items', () => {
     }
   });
 });
+
+// ---- 캐릭터 모으기 ----
+test('old save keeps body and equips, adds bg', () => {
+  const {Avatar} = mk();
+  const S = {coins:0, words:{}, owned:['crown','rainbow'], avatar:{body:'kid2', equip:{hat:'crown',face:null,hand:null,back:null,effect:'rainbow'}}};
+  Avatar.ensure(S);
+  assert.equal(S.avatar.body, 'kid2'); assert.equal(S.avatar.equip.hat, 'crown'); assert.equal(S.avatar.equip.effect, 'rainbow');
+  assert.equal(S.avatar.equip.bg, null);
+});
+test('free bodies are owned; paid bodies are not until bought', () => {
+  const {Avatar} = mk();
+  assert.ok(Avatar.owns('bunny')); assert.ok(!Avatar.owns('chick'));
+  assert.equal(Avatar.setBody('chick'), false);
+});
+test('buy a body spends coins once and allows setBody', () => {
+  const {S, Avatar} = mk(); S.coins = 120;
+  assert.ok(Avatar.buy('chick').ok); assert.equal(S.coins, 0);
+  assert.ok(S.owned.includes('chick')); assert.ok(Avatar.setBody('chick'));
+  assert.equal(Avatar.buy('chick').ok, false);
+});
+test('locked body unlocks to buy, not for free', () => {
+  const {S, env, Avatar} = mk(); S.coins = 1000;
+  assert.equal(Avatar.canBuy('bear').reason, 'locked'); assert.equal(Avatar.lockText(Avatar.item('bear')), '레벨 5 필요');
+  env.lv = 5; assert.ok(!Avatar.owns('bear')); assert.ok(Avatar.canBuy('bear').ok);
+});
+test('math bodies spend 💎', () => {
+  const {S, Avatar} = mk(); S.coins = 999; S.math.coins = 200; S.math.trophies = {a:1};
+  assert.ok(Avatar.buy('robot').ok); assert.equal(S.math.coins, 0); assert.equal(S.coins, 999);
+});
+test('ensure resets an unowned body to kid1', () => {
+  const {S, Avatar} = mk(); S.avatar.body = 'unicorn'; Avatar.ensure(S); assert.equal(S.avatar.body, 'kid1');
+});
+test('collection counts owned bodies', () => {
+  const {S, Avatar} = mk(); assert.equal(JSON.stringify(Avatar.collection()), '{"have":6,"total":15}');
+  S.owned.push('chick'); assert.equal(JSON.stringify(Avatar.collection()), '{"have":7,"total":15}');
+});
+test('quizWrong for a body offers other English bodies', () => {
+  const {Avatar} = mk(); const w = Avatar.quizWrong(Avatar.item('penguin'));
+  assert.equal(w.length, 2); for (const x of w) { assert.equal(x.slot, 'body'); assert.equal(x.cur, 'eng'); assert.notEqual(x.id, 'penguin'); }
+});
+test('deal and gift never offer bodies', () => {
+  const {Avatar} = mk({pinDeal:false});
+  for (const c of Avatar.giftChoices()) assert.notEqual(c.slot, 'body');
+  const d = Avatar.deal(); assert.ok(!d || Avatar.item(d.id).slot !== 'body');
+});

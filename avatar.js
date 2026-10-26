@@ -4,7 +4,15 @@
    - 전역 S, save, today, level 은 함수가 불릴 때만 읽어요 (로드 시점엔 DOM·S 를 안 건드려요)
    ===================================================================== */
 (function(){
-const byId = id => ITEMS.find(i => i.id === id);
+// 아이템 또는 캐릭터 (캐릭터는 slot:'body' 를 붙인 복사본)
+const byId = id => {
+  const it = ITEMS.find(i => i.id === id);
+  if (it) return it;
+  const b = BODIES.find(x => x.id === id);
+  return b ? {...b, slot:'body'} : undefined;
+};
+// 무료 캐릭터(price 0)는 늘 가진 것으로 쳐요
+const ownsIn = (s, id) => s.owned.includes(id) || BODIES.some(b => b.id === id && b.price === 0);
 // 슬롯별 위치·크기 (몸 이모지 크기 1em 기준. x: 가운데=0, 오른쪽 +, y: 위쪽 기준 아래로 +)
 const LAYOUT = {
   box:  {w:1.3, h:1.3},                           // 캐릭터 상자 크기
@@ -26,10 +34,10 @@ const QUIZ_RATE = 0.9;    // 퀴즈 보너스 10% 할인
 function ensure(s){
   if (!s.avatar || typeof s.avatar !== 'object') s.avatar = {};
   const a = s.avatar;
-  if (!BODIES.some(b => b.id === a.body)) a.body = 'kid1';
   if (!a.equip || typeof a.equip !== 'object') a.equip = {};
   if (!Array.isArray(s.owned)) s.owned = [];
   s.owned = s.owned.filter(id => typeof id === 'string');
+  if (!BODIES.some(b => b.id === a.body) || !ownsIn(s, a.body)) a.body = 'kid1';
   for (const sl of SLOTS){
     const it = byId(a.equip[sl]);
     a.equip[sl] = (it && it.slot === sl && s.owned.includes(it.id)) ? it.id : null;
@@ -42,7 +50,7 @@ function ensure(s){
   return s;
 }
 
-const owns = id => S.owned.includes(id);
+const owns = id => ownsIn(S, id);
 
 // 보스를 한 번이라도 이긴(별>0) 수 / 본 적 있는 단어 수
 const trophyCount = () => Object.values(S.trophies || {}).filter(v => v > 0).length;
@@ -113,7 +121,7 @@ function buy(id, opts){
 
 function equip(id){
   const it = byId(id);
-  if (!it || !owns(id)) return false;
+  if (!it || it.slot === 'body' || !owns(id)) return false;
   S.avatar.equip[it.slot] = id; save(); return true;
 }
 function unequip(slot){
@@ -121,10 +129,12 @@ function unequip(slot){
   S.avatar.equip[slot] = null; save();
 }
 function setBody(bodyId){
-  if (!BODIES.some(b => b.id === bodyId)) return false;
+  if (!BODIES.some(b => b.id === bodyId) || !owns(bodyId)) return false;
   S.avatar.body = bodyId; save(); return true;
 }
 const equipped = () => ({...S.avatar.equip});
+// 모은 캐릭터 수
+const collection = () => ({have: BODIES.filter(b => owns(b.id)).length, total: BODIES.length});
 const perks = () => Object.values(S.avatar.equip).map(byId).filter(i => i && i.perk).map(i => i.perk);
 
 // 첫 선물: 싼 아이템 중 하나를 공짜로 (딱 한 번)
@@ -195,6 +205,8 @@ function react(el, kind){
 
 // 영어 그림 퀴즈의 오답 후보: 영어 아이템만 (수학 아이템은 제외)
 function quizWrong(it, shuffle = a => a){
+  if (it.slot === 'body')   // 캐릭터는 다른 영어 캐릭터 그림에서 골라요
+    return shuffle(BODIES.filter(b => b.cur === 'eng' && b.id !== it.id && b.word !== it.word)).slice(0, 2).map(b => byId(b.id));
   const bad = x => x.cur === 'eng' && x.id !== it.id && x.icon !== it.icon;
   let wrong = shuffle(ITEMS.filter(x => bad(x) && x.slot === it.slot)).slice(0, 2);
   if (wrong.length < 2) wrong = wrong.concat(shuffle(ITEMS.filter(x => bad(x) && !wrong.includes(x))).slice(0, 2 - wrong.length));
@@ -202,5 +214,5 @@ function quizWrong(it, shuffle = a => a){
 }
 
 window.Avatar = {quizWrong, ensure, item: byId, owns, isUnlocked, lockText, wallet, deal, priceOf, canBuy, buy,
-  equip, unequip, setBody, equipped, perks, giftChoices, claimGift, render, react};
+  equip, unequip, setBody, equipped, collection, perks, giftChoices, claimGift, render, react};
 })();
