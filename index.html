@@ -578,7 +578,10 @@ function resumeGame(){
   if (window.Boss) Boss.reset();
   if ($('avPal')) Avatar.render($('avPal'), {size:'s', pet:true});   // 스테이지에서도 꾸민 캐릭터
   show('game');
-  if (isBoss && window.Boss){ Boss.enter(nextQuestion); return; }   // 보스 등장 장면 → 도전 버튼 → 첫 문제
+  if (isBoss && window.Boss){   // 보스 등장 장면 → 도전 버튼 → 첫 문제. 뒤에 지난 판이 비치지 않게 먼저 비워요
+    renderDots(); $('status').innerHTML = ''; $('field').innerHTML = '';
+    Boss.enter(nextQuestion); return;
+  }
   nextQuestion();
 }
 const bossOn = () => !!(window.Boss && Boss.isOn());

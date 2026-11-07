@@ -214,7 +214,10 @@ function resume(){
   if (window.Boss){ Boss.use(BOSS); Boss.reset(); }   // 보스 칸을 #mgame 으로, 지난 판의 보스 흔적 지우기
   $('bossRow').classList.toggle('on', boss);
   show('mgame');
-  if (boss){ Boss.enter(next); return; }   // 보스 등장 장면 → 도전 버튼 → 첫 문제
+  if (boss){   // 보스 등장 장면 → 도전 버튼 → 첫 문제. 뒤에 지난 판이 비치지 않게 먼저 비워요
+    dots(); $('mQ').innerHTML = ''; $('mStatus').innerHTML = ''; $('mField').innerHTML = '';
+    Boss.enter(next); return;
+  }
   next();
 }
 function dots(){
