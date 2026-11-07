@@ -1,30 +1,33 @@
 <!doctype html>
 <meta charset="utf-8"><title>avatar preview</title>
-<style>body{font-family:sans-serif;background:#fff8e7;margin:12px}.row{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin:8px 0}.cell{text-align:center;font-size:12px}button{font-size:16px;padding:6px 12px}</style>
-<h3>몸 6종 × 크기 3종</h3><div id="grid"></div>
-<h3>슬롯별 아이템 착용 (펫 포함)</h3><div class="row" id="sets"></div>
+<style>body{font-family:sans-serif;background:#fff8e7;margin:12px}.row{display:flex;gap:6px;align-items:flex-end;flex-wrap:wrap;margin:6px 0}.cell{text-align:center;font-size:11px;width:84px}.cell svg{width:84px;display:block}button{font-size:14px;padding:4px 10px}h3{margin:16px 0 4px}</style>
+<h3>Avatar.render 크기 s/m/l (펫 포함)</h3><div class="row" id="sizes"></div>
 <h3>반응</h3><div class="row"><div id="rx"></div>
-<button onclick="Avatar.react(rx,'cheer')">cheer</button><button onclick="Avatar.react(rx,'hurt')">hurt</button><button onclick="Avatar.react(rx,'attack')">attack</button></div>
+<button onclick="Avatar.react(rx,'cheer')">cheer</button><button onclick="Avatar.react(rx,'cheer',{combo:3})">cheer 3콤보</button>
+<button onclick="Avatar.react(rx,'hurt')">hurt</button><button onclick="Avatar.react(rx,'hurt',{boss:true})">hurt 보스</button>
+<button onclick="Avatar.react(rx,'attack')">attack</button><button onclick="Avatar.react(rx,'love')">love</button></div>
+<h3>아이템 썸네일 · 토끼/펭귄/드래곤/여우에 입히기</h3><div id="items"></div>
+<h3>캐릭터 15종 × 표정 9가지</h3><div id="moods"></div>
 <script>
 // 가짜 전역 (items.js / avatar.js 가 읽어요)
-var S = {avatar:{body:'kid1',equip:{}}, owned:[], coins:0, petOn:10, shop:{}, trophies:{}, words:{}};
+var S = {avatar:{body:'bunny',equip:{hat:'crown',hand:'wand',effect:'heart',bg:'bg_sky'}}, owned:[], coins:0, petOn:10, shop:{}, trophies:{}, words:{}};
 function save(){} function today(){return '2026-01-01'} function level(){return 99}
 </script>
-<script src="../items.js"></script><script src="../avatar.js"></script>
+<script src="../items.js"></script><script src="../avatar-art.js"></script><script src="../avatar.js"></script>
 <script>
-S.owned = ITEMS.map(i => i.id);
-const grid = document.getElementById('grid');
+S.owned = ITEMS.map(i => i.id).concat(BODIES.map(b => b.id));
+['s','m','l'].forEach(sz => { const c = document.createElement('div'); document.getElementById('sizes').appendChild(c); Avatar.render(c, {size:sz, pet:true}); });
+const rx = document.getElementById('rx'); Avatar.render(rx, {size:'l', pet:true});
+const cell = (parent, html, label) => { const c = document.createElement('div'); c.className = 'cell'; c.innerHTML = html + label; parent.appendChild(c); return c; };
+const row = id => { const r = document.createElement('div'); r.className = 'row'; document.getElementById(id).appendChild(r); return r; };
 BODIES.forEach(b => {
-  const row = document.createElement('div'); row.className = 'row'; grid.appendChild(row);
-  ['s','m','l'].forEach(sz => { const c = document.createElement('div'); c.className = 'cell'; row.appendChild(c); Avatar.render(c, {size:sz, body:b.id}); });
+  const r = row('moods');
+  cell(r, AvatarArt.face(b.id), b.name);
+  AvatarArt.MOODS.forEach(m => cell(r, AvatarArt.character({body:b.id, mood:m}), m));
 });
-const sets = document.getElementById('sets');
-[{hat:'crown',face:'glasses',hand:'wand',back:'cape',effect:'sparkle'},
- {hat:'tophat',face:'sunglasses',hand:'shield',back:'wings',effect:'fire'},
- {hat:'ribbon',face:'mask',hand:'balloon',back:'backpack',effect:'rainbow'}].forEach((pv, i) => {
-  const c = document.createElement('div'); c.className = 'cell'; sets.appendChild(c);
-  Avatar.render(c, {size:'l', pet:true, preview:pv, body:BODIES[i*2].id});
+ITEMS.forEach(it => {
+  const r = row('items');
+  cell(r, AvatarArt.thumb(it.id), it.id);
+  ['bunny','penguin','dragon','fox'].forEach(b => cell(r, AvatarArt.character({body:b, equip:{[it.slot]: it.id}, bg:true, mood: it.slot === 'bg' ? 'smile' : 'base'}), b));
 });
-S.avatar.equip.effect = 'heart';
-const rx = document.getElementById('rx'); Avatar.render(rx, {size:'l', pet:true, preview:{hat:'crown',hand:'wand'}});
 </script>

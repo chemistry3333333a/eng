@@ -4,15 +4,28 @@ const vm = require('vm');
 
 // 매 테스트마다 새 컨텍스트: lv 는 1 에서 시작해 레벨 잠금이 실제로 잠겨 있게 해요
 function mk(opts = {}) {
-  const env = {day: '2026-1-1', lv: 1, saves: 0};
-  const S = {coins: 0, stages: {}, words: {}, trophies: {}, pets: []};
-  const ctx = load(['items.js', 'avatar.js'], {S, save() { env.saves++; }, today: () => env.day, level: () => env.lv});
+  const env = {day: '2026-1-1', lv: 1, saves: 0, now: 0, timers: []};
+  const S = {coins: 0, stages: {}, words: {}, trophies: {}, pets: [], math: {coins: 0, trophies: {}}};
+  // 가짜 타이머: env.tick(ms) 로 시간을 흘려요
+  let tid = 0;
+  const setTimeout = (fn, ms) => { env.timers.push({id: ++tid, at: env.now + ms, fn}); return tid; };
+  const clearTimeout = id => { env.timers = env.timers.filter(t => t.id !== id); };
+  env.tick = ms => {
+    const end = env.now + ms;
+    for (;;) {
+      const t = env.timers.filter(x => x.at <= end).sort((a, b) => a.at - b.at)[0];
+      if (!t) break;
+      env.timers = env.timers.filter(x => x !== t); env.now = t.at; t.fn();
+    }
+    env.now = end;
+  };
+  const ctx = load(['items.js', 'avatar-art.js', 'avatar.js'], {S, save() { env.saves++; }, today: () => env.day, level: () => env.lv, setTimeout, clearTimeout});
   const Avatar = ctx.Avatar;
   const ITEMS = vm.runInContext('ITEMS', ctx);
   Avatar.ensure(S);
-  const unlocked = ITEMS.filter(i => !i.unlock).sort((a, b) => a.price - b.price);
+  const unlocked = ITEMS.filter(i => i.cur === 'eng' && !i.unlock).sort((a, b) => a.price - b.price);
   const cheap = unlocked[0];
-  const lockedLv = ITEMS.find(i => i.unlock && i.unlock.level);
+  const lockedLv = ITEMS.find(i => i.cur === 'eng' && i.unlock && i.unlock.level);
   // 특가(30% 할인)가 가격 계산에 끼어들지 않도록 다른 아이템으로 고정
   if (opts.pinDeal !== false) {
     S.shop.dealDay = env.day;
@@ -25,7 +38,7 @@ test('ensure fills defaults on an old save and keeps existing fields', () => {
   const {Avatar} = mk();
   const S = {name:'민준', coins:50, xp:120, stages:{1:{stars:2}}, words:{}, petOn:10, pets:[10]};
   Avatar.ensure(S);
-  assert.deepEqual(S.avatar, {body:'kid1', equip:{hat:null,face:null,hand:null,back:null,effect:null}});
+  assert.deepEqual(S.avatar, {body:'kid1', equip:{hat:null,face:null,hand:null,back:null,effect:null,bg:null}});
   assert.deepEqual(S.owned, []); assert.deepEqual(S.shop, {freeGiven:false, dealDay:'', dealId:''});
   assert.equal(S.coins, 50); assert.equal(S.petOn, 10); assert.deepEqual(S.stages, {1:{stars:2}});
 });
@@ -133,4 +146,170 @@ test('giftChoices excludes owned and locked; claimGift rejects them', () => {
   S.owned.push(g.id);
   assert.ok(!Avatar.giftChoices().some(i => i.id === g.id));
   assert.equal(Avatar.claimGift(g.id), false); assert.equal(S.shop.freeGiven, false);
+});
+
+test('math items spend math coins only', () => {
+  const {S, Avatar, ITEMS} = mk(); const m = ITEMS.find(i => i.id === 'm_ruler');
+  S.coins = 1000; S.math.coins = 10;
+  assert.deepEqual(Avatar.canBuy(m.id), {ok:false, reason:'coins', need:30});
+  S.math.coins = 40; assert.ok(Avatar.buy(m.id).ok); assert.equal(S.math.coins, 0); assert.equal(S.coins, 1000);
+  assert.deepEqual(Avatar.wallet(m.id), {cur:'math', coins:0});
+});
+test('English items still spend English coins', () => {
+  const {S, Avatar, cheap} = mk();
+  S.coins = 100; S.math.coins = 100;
+  const p = Avatar.priceOf(cheap.id);
+  assert.ok(Avatar.buy(cheap.id).ok);
+  assert.equal(S.coins, 100 - p); assert.equal(S.math.coins, 100);
+  assert.deepEqual(Avatar.wallet(cheap.id), {cur:'eng', coins:100 - p});
+});
+test('gift and deal never offer math items', () => {
+  const {Avatar, env} = mk({pinDeal: false});
+  assert.ok(Avatar.giftChoices().every(i => i.cur === 'eng'));
+  for (let d = 1; d <= 30; d++) {
+    env.day = '2027-1-' + d;
+    assert.equal(Avatar.item(Avatar.deal().id).cur, 'eng');
+  }
+});
+test('mathTrophies unlock counts only S.math.trophies', () => {
+  const {S, Avatar} = mk(); const it = Avatar.item('m_abacus');
+  S.trophies = {10:3, 103:3}; assert.ok(!Avatar.isUnlocked(it));
+  assert.equal(Avatar.lockText(it), '수학 보스 1마리 물리치기');
+  S.math.trophies = {'m-frB':1}; assert.ok(Avatar.isUnlocked(it));
+});
+test('Avatar tolerates a missing S.math', () => {
+  const {S, Avatar} = mk(); delete S.math;
+  assert.equal(Avatar.wallet('m_ruler').coins, 0);
+  assert.ok(!Avatar.isUnlocked(Avatar.item('m_abacus')));
+  assert.equal(Avatar.canBuy('m_ruler').ok, false);
+});
+test('quiz discount is 10% for math items too', () => {
+  const {Avatar} = mk();
+  assert.equal(Avatar.priceOf('m_ruler', {quiz:true}), 36);
+});
+test('every item has cur eng or math', () => { const {ITEMS} = mk(); ITEMS.forEach(i => assert.ok(['eng','math'].includes(i.cur))); });
+test('English quiz wrong-choice pool only has cur eng items', () => {
+  const {Avatar, ITEMS} = mk();
+  ITEMS.filter(i => i.cur === 'eng').forEach(it => {
+    for (let k = 0; k < 5; k++){
+      const w = Avatar.quizWrong(it, a => a.slice().sort(() => Math.random() - 0.5));
+      assert.equal(w.length, 2);
+      w.forEach(x => assert.equal(x.cur, 'eng'));
+    }
+  });
+});
+
+// ---- 캐릭터 모으기 ----
+test('old save keeps body and equips, adds bg', () => {
+  const {Avatar} = mk();
+  const S = {coins:0, words:{}, owned:['crown','rainbow'], avatar:{body:'kid2', equip:{hat:'crown',face:null,hand:null,back:null,effect:'rainbow'}}};
+  Avatar.ensure(S);
+  assert.equal(S.avatar.body, 'kid2'); assert.equal(S.avatar.equip.hat, 'crown'); assert.equal(S.avatar.equip.effect, 'rainbow');
+  assert.equal(S.avatar.equip.bg, null);
+});
+test('free bodies are owned; paid bodies are not until bought', () => {
+  const {Avatar} = mk();
+  assert.ok(Avatar.owns('bunny')); assert.ok(!Avatar.owns('chick'));
+  assert.equal(Avatar.setBody('chick'), false);
+});
+test('buy a body spends coins once and allows setBody', () => {
+  const {S, Avatar} = mk(); S.coins = 120;
+  assert.ok(Avatar.buy('chick').ok); assert.equal(S.coins, 0);
+  assert.ok(S.owned.includes('chick')); assert.ok(Avatar.setBody('chick'));
+  assert.equal(Avatar.buy('chick').ok, false);
+});
+test('locked body unlocks to buy, not for free', () => {
+  const {S, env, Avatar} = mk(); S.coins = 1000;
+  assert.equal(Avatar.canBuy('bear').reason, 'locked'); assert.equal(Avatar.lockText(Avatar.item('bear')), '레벨 5 필요');
+  env.lv = 5; assert.ok(!Avatar.owns('bear')); assert.ok(Avatar.canBuy('bear').ok);
+});
+test('math bodies spend 💎', () => {
+  const {S, Avatar} = mk(); S.coins = 999; S.math.coins = 200; S.math.trophies = {a:1};
+  assert.ok(Avatar.buy('robot').ok); assert.equal(S.math.coins, 0); assert.equal(S.coins, 999);
+});
+test('ensure resets an unowned body to kid1', () => {
+  const {S, Avatar} = mk(); S.avatar.body = 'unicorn'; Avatar.ensure(S); assert.equal(S.avatar.body, 'kid1');
+});
+test('collection counts owned bodies', () => {
+  const {S, Avatar} = mk(); assert.equal(JSON.stringify(Avatar.collection()), '{"have":6,"total":15}');
+  S.owned.push('chick'); assert.equal(JSON.stringify(Avatar.collection()), '{"have":7,"total":15}');
+});
+test('quizWrong for a body offers other English bodies', () => {
+  const {Avatar} = mk(); const w = Avatar.quizWrong(Avatar.item('penguin'));
+  assert.equal(w.length, 2); for (const x of w) { assert.equal(x.slot, 'body'); assert.equal(x.cur, 'eng'); assert.notEqual(x.id, 'penguin'); }
+});
+test('deal and gift never offer bodies', () => {
+  const {Avatar} = mk({pinDeal:false});
+  for (const c of Avatar.giftChoices()) assert.notEqual(c.slot, 'body');
+  const d = Avatar.deal(); assert.ok(!d || Avatar.item(d.id).slot !== 'body');
+});
+
+// ---- 그리기·표정 ----
+const plain = s => s.replace(/ id="[^"]+"|url\(#[^)]+\)/g, '');
+test('moodFor maps game events', () => {
+  const {Avatar} = mk();
+  assert.equal(Avatar.moodFor('cheer'), 'smile'); assert.equal(Avatar.moodFor('cheer', {combo:3}), 'star');
+  assert.equal(Avatar.moodFor('hurt'), 'wow'); assert.equal(Avatar.moodFor('hurt', {boss:true}), 'teary');
+  assert.equal(Avatar.moodFor('attack'), 'wink'); assert.equal(Avatar.moodFor('love'), 'love'); assert.equal(Avatar.moodFor('zzz'), 'base');
+});
+test('render draws SVG with the body and mood', () => {
+  const {S, Avatar, ctx} = mk(); S.avatar.body = 'cat'; const el = {innerHTML:''};
+  Avatar.render(el, {mood:'love'});
+  assert.match(el.innerHTML, /<svg/); assert.match(el.innerHTML, /class="av /);
+  assert.ok(plain(el.innerHTML).includes(plain(ctx.AvatarArt.character({body:'cat', equip:S.avatar.equip, mood:'love', bg:true}))));
+});
+test('render uses preview equips and bg only above size s', () => {
+  const {S, Avatar} = mk(); S.owned.push('bg_night'); S.avatar.equip.bg = 'bg_night';
+  const a = {innerHTML:''}, b = {innerHTML:''};
+  Avatar.render(a, {size:'s'}); Avatar.render(b, {size:'m'});
+  assert.doesNotMatch(a.innerHTML, /clipPath/); assert.match(b.innerHTML, /clipPath/);
+  const c = {innerHTML:''}; Avatar.render(c, {size:'s', bg:true}); assert.match(c.innerHTML, /clipPath/);
+});
+test('render skips equips without art', () => {
+  const {S, Avatar} = mk(); S.owned.push('ghost'); S.avatar.equip.hat = 'ghost'; const el = {innerHTML:''};
+  assert.doesNotThrow(() => Avatar.render(el, {})); assert.match(el.innerHTML, /<svg/);
+});
+test('react shows the mood, then returns to the render mood', () => {
+  const {Avatar, env} = mk(); const el = {innerHTML:''}, base = {innerHTML:''}, wow = {innerHTML:''};
+  Avatar.render(el, {}); Avatar.render(base, {}); Avatar.render(wow, {mood:'wow'});
+  Avatar.react(el, 'hurt');
+  assert.match(el.innerHTML, /av-hurt/); assert.equal(plain(el.innerHTML).replace('av-hurt', 'av-idle'), plain(wow.innerHTML));
+  env.tick(1000); assert.equal(plain(el.innerHTML), plain(base.innerHTML));
+});
+test('rapid reacts settle to base mood', () => {
+  const {Avatar, env} = mk(); const el = {innerHTML:''}, base = {innerHTML:''};
+  Avatar.render(el, {}); Avatar.render(base, {});
+  for (let i = 0; i < 5; i++) { Avatar.react(el, 'cheer', {combo:i}); env.tick(100); }
+  assert.notEqual(plain(el.innerHTML), plain(base.innerHTML));
+  env.tick(1000); assert.equal(plain(el.innerHTML), plain(base.innerHTML)); assert.equal(env.timers.length, 0);
+});
+test('react on an element that was never rendered is ignored', () => {
+  const {Avatar} = mk(); assert.doesNotThrow(() => Avatar.react({innerHTML:''}, 'cheer')); assert.doesNotThrow(() => Avatar.react(null, 'cheer'));
+});
+test('sleepy avatar falls asleep after 20s', () => {
+  const {Avatar, env} = mk(); const el = {innerHTML:''}, zz = {innerHTML:''};
+  Avatar.render(el, {sleepy:true}); Avatar.render(zz, {mood:'sleep'});
+  env.tick(19999); assert.notEqual(plain(el.innerHTML), plain(zz.innerHTML));
+  env.tick(1); assert.equal(plain(el.innerHTML), plain(zz.innerHTML));
+});
+test('thumb gives SVG for items and bodies', () => {
+  const {Avatar} = mk(); assert.match(Avatar.thumb('cap'), /^<svg/); assert.match(Avatar.thumb('penguin'), /^<svg/);
+});
+test('thumb falls back to the emoji icon', () => {
+  const {Avatar, ctx} = mk(); ctx.AvatarArt.hasItem = () => false; ctx.AvatarArt.hasBody = () => false;
+  assert.equal(Avatar.thumb('cap'), '🧢'); assert.equal(Avatar.thumb('penguin'), '🐧');
+});
+test('react keeps the pet node and only redraws the figure', () => {
+  const {S, Avatar, env} = mk(); S.petOn = 10;
+  // 아주 작은 가짜 DOM: render 뒤 .av(루트)와 .av-fig(그림) 노드를 돌려줘요
+  const root = {className:''}, fig = {innerHTML:''};
+  const el = {innerHTML:'', querySelector: s => s === '.av' ? root : s === '.av-fig' ? fig : null};
+  Avatar.render(el, {pet:true});
+  assert.match(el.innerHTML, /class="av-pet"/); assert.match(el.innerHTML, /class="av-fig"/);
+  const before = el.innerHTML;
+  Avatar.react(el, 'cheer');
+  assert.equal(el.innerHTML, before);                       // 펫 말풍선이 붙은 노드를 지우지 않아요
+  assert.match(root.className, /av-cheer/); assert.match(fig.innerHTML, /#ff7a8a/);   // 방긋 입
+  env.tick(1000);
+  assert.equal(el.innerHTML, before); assert.match(root.className, /av-idle/); assert.doesNotMatch(fig.innerHTML, /#ff7a8a/);
 });

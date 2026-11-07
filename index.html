@@ -342,8 +342,12 @@ button{font-family:inherit;color:inherit;cursor:pointer;touch-action:manipulatio
 </div>
 
 <script src="words.js"></script>
+<script src="sentences.js"></script>
 <script src="items.js"></script>
+<script src="avatar-art.js"></script>
 <script src="avatar.js"></script>
+<script src="math-core.js"></script>
+<script src="math-stages.js"></script>
 <script>
 /* ================== 데이터 ================== */
 // 단어 데이터는 words.js 에 있어요 (STAGE_DEFS, CHAPTERS, HOMOPHONES)
@@ -369,7 +373,7 @@ const KEY = 'wordisland_save_v1';
 /* ================== 저장 ================== */
 let S = null;
 function freshSave(name){
-  return Avatar.ensure({v:1, name, xp:0, coins:0, stages:{}, words:{}, streak:{n:0,last:''}, settings:{rate:0.85}, session:null, parrot:{best:0,played:0}});
+  return MathStages.ensure(Avatar.ensure({v:1, name, xp:0, coins:0, stages:{}, words:{}, streak:{n:0,last:''}, settings:{rate:0.85}, session:null, parrot:{best:0,played:0}}));
 }
 function loadSave(){
   try { const raw = localStorage.getItem(KEY); if (raw) return JSON.parse(raw); } catch(e) {}
@@ -457,11 +461,11 @@ function floatText(el, text){
 /* ================== 홈 ================== */
 function renderHome(){
   S = loadSave();
-  if (S) Avatar.ensure(S);
+  if (S){ Avatar.ensure(S); MathStages.ensure(S); }
   if (S){
     $('newUser').style.display = 'none'; $('oldUser').style.display = 'flex';
     $('helloTxt').textContent = `안녕, ${S.name}! 🔥 ${S.streak.n}일째 · Lv.${level()}`;
-    $('continueBtn').textContent = S.session ? '▶ 하던 게임 이어하기' : '▶ 이어하기';
+    $('continueBtn').textContent = (S.session || (S.math && S.math.session)) ? '▶ 하던 게임 이어하기' : '▶ 이어하기';
   } else {
     $('newUser').style.display = 'flex'; $('oldUser').style.display = 'none';
   }
@@ -472,19 +476,18 @@ $('startBtn').onclick = () => {
   if (!name){ $('nameInput').focus(); toast('이름을 써 주세요!'); return; }
   unlockAudio();
   S = freshSave(name); touchStreak(); save();
-  renderMap();
-  setTimeout(() => speak("Hello! Let's catch monsters!"), 300);
+  MathGame.pick();
 };
 $('nameInput').addEventListener('keydown', e => { if (e.key === 'Enter') $('startBtn').click(); });
 $('continueBtn').onclick = () => {
   unlockAudio(); touchStreak();
-  if (S.session) resumeGame(); else renderMap();
+  MathGame.pick();
 };
 
 /* ================== 지도 ================== */
 function renderMap(){
   $('whoTxt').textContent = S.name;
-  Avatar.render($('whoAv'), {size:'s'});
+  Avatar.render($('whoAv'), {size:'s', bg:true, sleepy:true});
   $('whoAv').onclick = () => window.Shop && Shop.open('body');
   $('lvlTxt').textContent = `Lv.${level()} · 다음 레벨까지 ${100 - S.xp % 100} XP`;
   $('xpFill').style.width = (S.xp % 100) + '%';
@@ -567,13 +570,18 @@ function startStage(id){
 }
 let Q = null; // 현재 문제 상태(저장 안 함)
 function resumeGame(){
+  if (window.Boss) Boss.use(Boss.ENG);   // 보스 칸·문맥을 영어 #game 으로 (수학 보스 뒤에도)
   const ses = S.session;
+  if (ses.sent && window.SentenceGame){ SentenceGame.resume(); return; }   // 문장 라운드 하던 중
   const isBoss = ses.stage !== 'review' && STAGES.find(s=>s.id===ses.stage).boss;
   $('bossRow').classList.toggle('on', !!isBoss);
   if (window.Boss) Boss.reset();
   if ($('avPal')) Avatar.render($('avPal'), {size:'s', pet:true});   // 스테이지에서도 꾸민 캐릭터
   show('game');
-  if (isBoss && window.Boss){ Boss.enter(nextQuestion); return; }   // 보스 등장 장면 → 도전 버튼 → 첫 문제
+  if (isBoss && window.Boss){   // 보스 등장 장면 → 도전 버튼 → 첫 문제. 뒤에 지난 판이 비치지 않게 먼저 비워요
+    renderDots(); $('status').innerHTML = ''; $('field').innerHTML = '';
+    Boss.enter(nextQuestion); return;
+  }
   nextQuestion();
 }
 const bossOn = () => !!(window.Boss && Boss.isOn());
@@ -591,7 +599,12 @@ function renderDots(){
 }
 function nextQuestion(){
   const ses = S.session;
-  if (ses.i >= ses.queue.length){ if (bossOn()) Boss.victory(finishStage); else finishStage(); return; }
+  if (ses.i >= ses.queue.length){
+    if (bossOn()) Boss.victory(finishStage);
+    else if (window.SentenceGame && SentenceGame.wants(ses)){ Q = null; SentenceGame.start(); }   // 단어 다음 문장 라운드
+    else finishStage();
+    return;
+  }
   renderDots();
   const target = ses.queue[ses.i];
   let pool = stagePool(ses.stage);
@@ -648,7 +661,7 @@ function tapMonster(el){
     floatText(el, `+${pts}`);
     if (bossOn()) Boss.onCorrect(el, {first, fast, combo:ses.combo, last: ses.i >= ses.queue.length});
     if (window.Boss) Boss.petCheer();
-    Avatar.react($('avPal'), 'cheer');
+    Avatar.react($('avPal'), 'cheer', {combo: ses.combo});
     const info = WORDS[Q.target];
     $('status').innerHTML = `<span class="answer">${info.e} <b>${info.w}</b> = ${info.k}</span>` +
       (first && ses.combo >= 2 ? `<span class="combo">🔥 ${ses.combo} 콤보!</span>` : '');
@@ -683,7 +696,8 @@ $('quitBtn').onclick = () => {
 let lastStage = null;
 function finishStage(){
   const ses = S.session; Q = null;
-  const r = ses.first / ses.queue.length;
+  const sent = ses.sent;   // 문장 라운드를 했으면 단어와 합쳐서 별을 매겨요
+  const r = (ses.first + (sent ? sent.first : 0)) / (ses.queue.length + (sent ? sent.n : 0));
   const stars = r >= 0.9 ? 3 : r >= 0.7 ? 2 : 1;
   const bonus = stars * 5; ses.coins += bonus; S.coins += bonus;
   lastStage = ses.stage;
@@ -699,10 +713,11 @@ function finishStage(){
   if (window.Boss) Boss.reset();
 
   const bossSt = isBoss && STAGES.find(s=>s.id===ses.stage);
-  Avatar.render($('avRes'), {size:'m', pose:'cheer', pet:true});
+  Avatar.render($('avRes'), {size:'m', pose:'cheer', pet:true, mood: stars === 3 || isBoss ? 'love' : 'smile'});
   $('rTitle').textContent = isBoss ? `${bossSt.icon} ${bossSt.name} 클리어!` : ses.stage === 'review' ? '🔁 복습 완료!' : stars === 3 ? '완벽해요! 🎉' : '스테이지 클리어! 🎉';
   $('rStars').innerHTML = [0,1,2].map(i => `<span>${i < stars ? '⭐' : '☆'}</span>`).join('');
   $('rStats').innerHTML = `<span class="pill">🎯 한 번에 ${ses.first}/${ses.queue.length}</span>
+    ${sent ? `<span class="pill">📜 문장 ${sent.first}/${sent.n}</span>` : ''}
     <span class="pill">⭐ ${ses.score}점</span><span class="pill">🔥 최고 ${ses.maxCombo}콤보</span>
     <span class="pill">🪙 +${ses.coins}</span>`;
   let h = reward ? Boss.rewardHtml(reward) : '';
@@ -759,7 +774,7 @@ function renderOpenAll(){
   b.textContent = on ? '🔓 켜짐 (눌러서 끄기)' : '🔒 꺼짐 (눌러서 켜기)';
   b.className = 'btn small ' + (on ? 'green' : 'gray');
 }
-$('openAllBtn').onclick = () => { S.settings.openAll = !S.settings.openAll; save(); renderOpenAll(); renderMap(); $('setModal').classList.add('on'); };
+$('openAllBtn').onclick = () => { S.settings.openAll = !S.settings.openAll; save(); renderOpenAll(); (S.mode === 'math' ? MathGame.map() : renderMap()); $('setModal').classList.add('on'); };
 $('setBtn').onclick = () => { renderRates(); renderOpenAll(); $('backupOut').value = encodeSave(); $('backupIn').value = ''; $('setModal').classList.add('on'); };
 $('setClose').onclick = () => $('setModal').classList.remove('on');
 $('copyBtn').onclick = async () => {
@@ -772,7 +787,7 @@ $('restoreBtn').onclick = () => {
     const data = decodeSave($('backupIn').value);
     if (!data || !data.name || !data.words) throw 0;
     if (!confirm(`'${data.name}'의 기록으로 바꿀까요?`)) return;
-    S = Avatar.ensure(data); save(); $('setModal').classList.remove('on'); renderMap(); toast('복구 완료! ✅');
+    S = MathStages.ensure(Avatar.ensure(data)); save(); $('setModal').classList.remove('on'); (S.mode === 'math' ? MathGame.map() : renderMap()); toast('복구 완료! ✅');
   } catch(e){ toast('코드가 올바르지 않아요 😢'); }
 };
 $('resetBtn').onclick = () => {
@@ -906,7 +921,7 @@ function tapCard(el){
     P.score += pts; S.xp += xp; P.coins += coin; S.coins += coin;
     P.marks[P.i] = first; P.i++;
     save();
-    sfxGood(); Avatar.react($('avPar'), 'cheer'); el.classList.add('right'); floatText(el, `+${pts}`);
+    sfxGood(); Avatar.react($('avPar'), 'cheer', {combo: P.combo}); el.classList.add('right'); floatText(el, `+${pts}`);
     $('pStatus').innerHTML = `<span class="combo">Case closed! 🔎</span>` + (first && P.combo >= 2 ? `<span class="combo">🔥 ${P.combo}</span>` : '') + reveal();
     setTimeout(() => speak('Case closed!'), 250);
     if (level() > lvBefore) setTimeout(() => { toast(`🎉 레벨 업! Lv.${level()}`, 2000); sfxWin(); }, 600);
@@ -946,7 +961,7 @@ function finishParrot(){
     <span class="pill">⭐ ${P.score}점</span><span class="pill">🔥 최고 ${P.maxCombo}콤보</span>
     <span class="pill">🪙 +${P.coins}</span><span class="pill">🏆 최고 ${S.parrot.best}점</span>`;
   P = null;
-  Avatar.render($('avPRes'), {size:'m', pose:'cheer', pet:true});
+  Avatar.render($('avPRes'), {size:'m', pose:'cheer', pet:true, mood: stars === 3 ? 'love' : 'smile'});
   show('pResult'); sfxWin();
   setTimeout(() => speak(stars === 3 ? 'Perfect! You are amazing!' : 'Great job!'), 500);
 }
@@ -964,5 +979,8 @@ renderHome();
 </script>
 <script src="boss.js"></script>
 <script src="shop.js"></script>
+<script src="math-hint.js"></script>
+<script src="math-game.js"></script>
+<script src="sentence-game.js"></script>
 </body>
 </html>
