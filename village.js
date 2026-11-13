@@ -5,7 +5,7 @@
    - S.village = {own:{id:n}, gifts:[...], placed:[{k:'d'|'c', id, x, z, r}], night}
    ===================================================================== */
 (function(){
-const ISLAND_R = 7.2;      // 이 반지름 안에만 놓여요
+const ISLAND_R = 6.2;      // 이 반지름 안에만 놓여요
 const QUIZ_RATE = 0.9;     // 영어로 주문하기·계산 문제 10% 할인
 const byId = id => DECOR.find(d => d.id === id);
 const snap = v => Math.round(v * 2) / 2;

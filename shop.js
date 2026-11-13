@@ -4,9 +4,9 @@
    - 아이템을 누르면 미리보기(피팅)만 바뀌고, 사야 내 것이 돼요
    ===================================================================== */
 (() => {
-const BASE_TABS = ['body','hat','face','hand','back','effect','bg'];
+const BASE_TABS = ['body','hat','face','hand','back','effect','bg','village'];
 const tabs = () => (cur === 'eng' && Avatar.deal() ? ['deal'] : []).concat(BASE_TABS);   // 특가가 없으면 특가 탭을 숨겨요
-const TAB_NAME = {deal:'특가', body:'캐릭터', hat:'모자', face:'얼굴', hand:'손', back:'등', effect:'효과', bg:'배경'};
+const TAB_NAME = {deal:'특가', body:'캐릭터', hat:'모자', face:'얼굴', hand:'손', back:'등', effect:'효과', bg:'배경', village:'마을'};
 const PREVIEW_MOODS = ['smile','wink','wow','star','love','tongue'];   // 미리보기 캐릭터를 누르면 나오는 표정
 const UNLOCK_ICON = u => u.level ? '⭐' : (u.trophies || u.mathTrophies) ? '🏆' : '📚';
 
@@ -98,7 +98,19 @@ $('setBtn').before(sBtn);
 /* ---------- 상태 ---------- */
 let cur = 'eng', tab = 'body', tryOn = {}, tryBody = null, sel = null, busy = false, moodNext = null;
 const find = id => Avatar.item(id);
-const nameOf = it => it.slot === 'body' ? it.name : it.word;
+const nameOf = it => it.kind ? it.name : it.slot === 'body' ? it.name : it.word;
+// 마을 장식(kind 가 있음)은 Village, 나머지는 Avatar 가 값·사기를 맡아요 (같은 이름의 함수)
+const isD = it => !!(it && it.kind);
+const A = it => isD(it) ? Village : Avatar;
+let vthumbs = {}, spin = null, spinId = null;
+const dthumb = d => vthumbs[d.id] ? `<img src="${vthumbs[d.id]}" alt="" style="width:100%;height:100%">` : d.icon;
+const thumbOf = it => isD(it) ? dthumb(it) : Avatar.thumb(it.id);
+function stopSpin(){ if (spin){ spin.then(s => s && s.dispose()); spin = null; } spinId = null; }
+// 마을 탭: 3D 를 불러와 장식 그림을 만들어요 (못 불러오면 이모지 그대로)
+function loadDecorThumbs(){
+  if (Object.keys(vthumbs).length || !window.VillageScreen) return;
+  VillageScreen.load3d().then(m => m.thumbs(DECOR.map(d => d.id))).then(t => { vthumbs = t; if (tab === 'village') refresh(); }).catch(() => {});
+}
 const curOf = it => it.cur === 'math' ? 'math' : 'eng';
 const coinIcon = c => c === 'math' ? '💎' : '🪙';
 
@@ -113,14 +125,18 @@ function refresh(){
   });
   const col = Avatar.collection();
   $('shopCol').textContent = `캐릭터 ${col.have}/${col.total}`;
-  Avatar.render($('shopPrev'), {size:'l', pet:true, preview:tryOn, body:tryBody});
-  if (moodNext){ Avatar.react($('shopPrev'), moodNext); moodNext = null; }   // 입어 보기·사기 반응
+  if (tab === 'village') drawDecorPreview();
+  else {
+    stopSpin();
+    Avatar.render($('shopPrev'), {size:'l', pet:true, preview:tryOn, body:tryBody});
+    if (moodNext){ Avatar.react($('shopPrev'), moodNext); moodNext = null; }   // 입어 보기·사기 반응
+  }
   if (tab === 'deal' && !tabs().includes('deal')) tab = 'body';
   $('shopTabs').innerHTML = '';
   tabs().forEach(t => {
     const b = document.createElement('button');
     b.className = 'sp-tab' + (t === tab ? ' on' : '');
-    b.innerHTML = `<b>${t === 'body' ? '🧒' : t === 'deal' ? '🏷️' : SLOT_ICON[t]}</b>${TAB_NAME[t]}`;
+    b.innerHTML = `<b>${t === 'body' ? '🧒' : t === 'deal' ? '🏷️' : t === 'village' ? '🏡' : SLOT_ICON[t]}</b>${TAB_NAME[t]}`;
     b.onclick = () => { tab = t; tryOn = {}; tryBody = null; sel = null; refresh(); };
     $('shopTabs').appendChild(b);
   });
@@ -136,6 +152,20 @@ function drawGrid(){
     b.onclick = fn; g.appendChild(b);
   };
   const ic = coinIcon(cur);
+  if (tab === 'village'){
+    loadDecorThumbs();
+    Village.list(cur).forEach(d => {
+      const n = Village.owned(d.id), open = Village.isUnlocked(d);
+      let status;
+      if (d.price == null) status = n ? `보유 ${n}` : `🎁 ${Village.giftText(d).replace(' 선물', '')}`;
+      else if (!open && !n) status = `🔒${UNLOCK_ICON(d.unlock)}`;
+      else if (d.stack) status = n ? `${n}개 · ${ic}${d.price}` : `${ic}${d.price}`;
+      else status = n ? '보유' : `${ic}${d.price}`;
+      cell((n ? 'worn ' : '') + (!n && (!open || d.price == null) ? 'lock ' : '') + (d.legend ? 'legend ' : '') + (sel === d.id ? 'sel' : ''),
+        dthumb(d), d.name, status, () => pickDecor(d));
+    });
+    return;
+  }
   if (tab === 'body'){
     BODIES.filter(b => curOf(b) === cur).forEach(b => {
       const it = find(b.id), owned = Avatar.owns(b.id), worn = S.avatar.body === b.id, open = Avatar.isUnlocked(it);
@@ -164,10 +194,51 @@ function pick(it){
   refresh();
 }
 
+function pickDecor(d){
+  sel = d.id;
+  if (d.cur === 'eng') speak(d.word);
+  refresh();
+}
+// 마을 탭 미리보기: 고른 장식이 3D 로 돌아가요
+function drawDecorPreview(){
+  const el = $('shopPrev');
+  if (!sel){ stopSpin(); el.innerHTML = '<span class="hint" style="font-size:20px;color:#475569">🏡 장식을 눌러서 구경해요</span>'; return; }
+  if (spinId === sel) return;
+  stopSpin(); spinId = sel;
+  const d = Village.item(sel);
+  el.innerHTML = `<span style="font-size:90px">${d.icon}</span>`;
+  if (!window.VillageScreen) return;
+  const id = sel;
+  spin = VillageScreen.load3d().then(m => spinId === id ? m.spinPreview(el, id) : null).catch(() => null);
+}
+function villageBar(bar){
+  const go = document.createElement('button');
+  go.className = 'btn green'; go.textContent = '🏡 마을 꾸미러 가기';
+  go.onclick = () => { stopSpin(); closeModal(); VillageScreen.open('shop'); };
+  bar.appendChild(go);
+}
+
 function drawBar(){
   const bar = $('shopBar'); bar.innerHTML = '';
-  const it = sel && find(sel);
   const note = t => { bar.innerHTML = `<span class="hint">${t}</span>`; };
+  if (tab === 'village'){
+    const d = sel && Village.item(sel);
+    const r = d && Village.canBuy(d.id);
+    if (d && r.ok){
+      const b = document.createElement('button'); b.className = 'btn blue'; b.textContent = `${coinIcon(d.cur)} ${r.price} 사기`;
+      b.onclick = () => doBuy(d); bar.appendChild(b);
+    } else if (d && r.reason === 'coins'){
+      const b = document.createElement('button'); b.className = 'btn gray'; b.disabled = true;
+      b.textContent = `${d.cur === 'math' ? '💎' : '코인'}이 ${r.need}개 더 필요해요`; bar.appendChild(b);
+    } else if (d && r.reason === 'locked'){
+      const b = document.createElement('button'); b.className = 'btn gray'; b.disabled = true; b.textContent = `🔒 ${Village.lockText(d)}`; bar.appendChild(b);
+    } else if (d && r.reason === 'giftOnly' && !Village.owned(d.id)){
+      const b = document.createElement('button'); b.className = 'btn gray'; b.disabled = true; b.textContent = `🎁 ${Village.giftText(d)}`; bar.appendChild(b);
+    }
+    villageBar(bar);
+    return;
+  }
+  const it = sel && find(sel);
   if (!it) return note(tab === 'body' ? '캐릭터를 눌러서 만나 봐요!' : '아이템을 눌러서 입어 봐요!');
   const btn = (label, cls, fn, dis) => {
     const b = document.createElement('button');
@@ -199,13 +270,19 @@ function act(fn){
 
 // 구매 흐름: 특가는 바로 사고, 그 밖에는 "영어로 주문하기" 모달을 먼저 띄워요
 function doBuy(it){
-  const d = Avatar.deal();
+  const d = isD(it) ? null : Avatar.deal();   // 특가는 장식에 안 걸어요
   if (curOf(it) === 'eng' && d && d.id === it.id) return act(() => finishBuy(it));
   if (curOf(it) === 'math') return mathOffer(it);
   quizOffer(it);
 }
 // 실제로 사는 곳 (Avatar.buy 는 여기서만, 확정 한 번에 한 번만 불러요)
 function finishBuy(it, opts){
+  if (isD(it)){
+    const r = Village.buy(it.id, opts);
+    if (!r.ok) return false;
+    sfxGood(); toast(`${it.icon} ${it.name} 샀어요! 마을 가방에 들어갔어요`);
+    return true;
+  }
   const r = Avatar.buy(it.id, opts);
   if (!r.ok) return false;
   if (it.slot === 'body'){ tryBody = null; Avatar.setBody(it.id); }
@@ -224,26 +301,26 @@ function modalBuy(it, opts){
 const shuffle = a => { for (let i = a.length - 1; i > 0; i--){ const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 
 function quizOffer(it){
-  const q = Avatar.priceOf(it.id, {quiz:true});
+  const q = A(it).priceOf(it.id, {quiz:true});
   showModal(p => {
     mk(p, 'h2', '', '영어로 주문하면 10% 할인! 🗣️');
     mk(p, 'p', '', `${it.icon} 🪙${it.price} → 🪙${q}`);
     const row = mk(p, 'div', 'row');
     mk(row, 'button', 'btn green small', '도전하기', () => quiz(it));
     mk(row, 'button', 'btn gray small', '그냥 살래요', () => {
-      if (Avatar.canBuy(it.id).ok) modalBuy(it); else { closeModal(); toast('코인이 모자라요'); }
+      if (A(it).canBuy(it.id).ok) modalBuy(it); else { closeModal(); toast('코인이 모자라요'); }
     });
   });
 }
 function mathOffer(it){
-  const q = Avatar.priceOf(it.id, {quiz:true});
+  const q = A(it).priceOf(it.id, {quiz:true});
   showModal(p => {
     mk(p, 'h2', '', '계산 문제 맞히면 10% 할인! 🧮');
     mk(p, 'p', '', `${it.icon} 💎${it.price} → 💎${q}`);
     const row = mk(p, 'div', 'row');
     mk(row, 'button', 'btn green small', '도전하기', () => mathQuiz(it));
     mk(row, 'button', 'btn gray small', '그냥 살래요', () => {
-      if (Avatar.canBuy(it.id).ok) modalBuy(it); else { closeModal(); toast('💎이 모자라요'); }
+      if (A(it).canBuy(it.id).ok) modalBuy(it); else { closeModal(); toast('💎이 모자라요'); }
     });
   });
 }
@@ -265,7 +342,7 @@ function mathQuiz(it){
         mk(p2, 'h2', '', '괜찮아요!');
         mk(p2, 'p', '', `정답은 ${MathCore.html(prob.ans)}`);
         const r2 = mk(p2, 'div', 'row');
-        const full = Avatar.canBuy(it.id);
+        const full = A(it).canBuy(it.id);
         if (full.ok) mk(r2, 'button', 'btn blue small', `💎 ${full.price} 사기`, () => { if (!done2){ done2 = true; modalBuy(it); } });
         else if (full.reason === 'coins') mk(p2, 'p', '', `💎이 ${full.need}개 더 필요해요`);
         mk(r2, 'button', 'btn gray small', '닫기', closeModal);
@@ -275,14 +352,14 @@ function mathQuiz(it){
 }
 function quiz(it){
   // 같은 슬롯의 다른 아이템 2개 (같은 그림은 빼고), 모자라면 전체에서 채워요
-  const wrong = Avatar.quizWrong(it, shuffle);
+  const wrong = isD(it) ? shuffle(DECOR.filter(x => x.cur === 'eng' && x.id !== it.id)).slice(0, 2) : Avatar.quizWrong(it, shuffle);
   const choices = shuffle([it, ...wrong]);
   let done = false, done2 = false;
   showModal(p => {
     mk(p, 'h2', '', '무슨 뜻일까요? 🔊');
     mk(p, 'button', 'btn blue small', '다시 듣기 🔊', () => speak(it.word));
     const row = mk(p, 'div', 'row');
-    choices.forEach(c => mk(row, 'button', 'opt big', Avatar.thumb(c.id), () => {
+    choices.forEach(c => mk(row, 'button', 'opt big', isD(c) ? `<span style="display:block;width:84px;height:84px;font-size:64px">${thumbOf(c)}</span>` : Avatar.thumb(c.id), () => {
       if (done) return; done = true;
       if (c.id === it.id){ sfxGood(); modalBuy(it, {quiz:true}); return; }
       sfxBad();
@@ -290,7 +367,7 @@ function quiz(it){
         mk(p2, 'h2', '', '괜찮아요!');
         mk(p2, 'p', '', `정답은 ${it.icon} ${it.word}`);
         const r2 = mk(p2, 'div', 'row');
-        const full = Avatar.canBuy(it.id);
+        const full = A(it).canBuy(it.id);
         if (full.ok) mk(r2, 'button', 'btn blue small', `🪙 ${full.price} 사기`, () => { if (!done2){ done2 = true; modalBuy(it); } });
         else if (full.reason === 'coins') mk(p2, 'p', '', `코인이 ${full.need}개 더 필요해요`);
         mk(r2, 'button', 'btn gray small', '닫기', closeModal);
@@ -346,9 +423,13 @@ function open(t, c){
   tab = tabs().includes(t) ? t : 'body'; tryOn = {}; tryBody = null; sel = null; busy = false;
   closeModal(); refresh(); show('shop');
   if (cur === 'eng' && !S.shop.freeGiven) bodyModal();
+  else if (window.Village){
+    const g = Village.claimGifts();
+    if (g.length) toast(`🎁 마을 선물 ${g.map(x => Village.item(x.id).icon).join('')} 도착! 마을 가방을 열어 봐요`, 2600);
+  }
 }
 function leave(){
-  closeModal(); tryOn = {}; tryBody = null; sel = null;
+  stopSpin(); closeModal(); tryOn = {}; tryBody = null; sel = null;
   if (S.mode === 'math' && window.MathGame) MathGame.map(); else renderMap();
 }
 sBtn.onclick = () => open();
