@@ -267,5 +267,12 @@ const css = `
 .av-fk{transform-box:fill-box;transform-origin:50% 100%;animation:av-fk .5s ease-in-out infinite alternate}
 @keyframes av-fk{from{transform:scaleY(.85)}to{transform:scaleY(1.1)}}`;
 
-window.AvatarArt = {MOODS, character, face: faceThumb, thumb, hasBody, hasItem, css};
+// 입체 인형(village-3d.js)용: 표정 조각(그림 상자 좌표, <svg> 없이)과 캐릭터 색
+const expression = (mood, beak) => face(MOODS.includes(mood) ? mood : 'base', !!beak);
+function palette(id){
+  const c = BODY_ART[hasBody(id) ? id : 'kid1'], out = {};
+  for (const k of Object.keys(c)) if (typeof c[k] !== 'function') out[k] = c[k];
+  return out;
+}
+window.AvatarArt = {MOODS, character, face: faceThumb, thumb, hasBody, hasItem, css, expression, palette};
 })();
