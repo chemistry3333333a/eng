@@ -423,28 +423,41 @@ function readJSON(k){
 function readCache(){ return USER ? readJSON(cacheKey()) : null; }
 // 로그인 전에 이 기기에 쌓인 옛 기록 (이미 처리했으면 없음)
 function loadLegacy(){ return readJSON(KEY + ':migrated') ? null : readJSON(KEY); }
+// 기기 사본 = {data, savedAt, dirty, base}. base 는 이 사본이 시작한 클라우드 savedAt (Account.pickStart)
+let ready = false;   // startSession 이 기록을 고른 뒤에만 클라우드에 올려요
+function writeCache(uid, c){ try { localStorage.setItem(KEY + ':' + uid, JSON.stringify(c)); } catch(e) {} }
 function save(){
   if (!S || !USER) return;
-  try { localStorage.setItem(cacheKey(), JSON.stringify({data:S, savedAt:Date.now(), dirty:true})); } catch(e) {}
+  const old = readCache();
+  const savedAt = Math.max(Date.now(), old ? old.savedAt + 1 : 0);   // 같은 ms 에 두 번 저장해도 구분돼요
+  writeCache(USER.uid, {data:S, savedAt, dirty:true, base:old ? old.base : null});
   if (!flushTimer) flushTimer = setTimeout(flushCloud, CLOUD_EVERY);
 }
-// 기기 사본이 아직 안 올라갔으면 올려요. 올라갔거나 올릴 게 없으면 true
-function flushCloud(){
-  clearTimeout(flushTimer); flushTimer = null;
-  if (!USER) return Promise.resolve(true);
-  if (flushing) return flushing;
-  const c = readCache();
-  if (!c || !c.dirty) return Promise.resolve(true);
-  const user = USER;
+// 기기 사본 한 번 올리기 → true/false
+function pushOnce(user, c){
   let timer;
   const timeout = new Promise(r => { timer = setTimeout(() => r(false), FLUSH_TIMEOUT); });
   const put = Cloud.write(user.uid, user.id, c.data, c.savedAt).then(() => {
-    const now = readJSON(KEY + ':' + user.uid);   // 그사이 새로 저장했으면 dirty 를 그대로 둬요
-    if (now && now.savedAt === c.savedAt){ now.dirty = false; try { localStorage.setItem(KEY + ':' + user.uid, JSON.stringify(now)); } catch(e) {} }
+    const now = readJSON(KEY + ':' + user.uid);
+    if (now){ now.base = c.savedAt; if (now.savedAt === c.savedAt) now.dirty = false; writeCache(user.uid, now); }   // 그사이 새로 저장했으면 dirty 유지
     return true;
   }, () => false);
-  flushing = Promise.race([put, timeout]).finally(() => { clearTimeout(timer); flushing = null; });
-  return flushing;
+  return Promise.race([put, timeout]).finally(() => clearTimeout(timer));
+}
+// 기기 사본의 "지금" 내용이 다 올라갈 때까지 올려요. 다 올라갔거나 올릴 게 없으면 true
+async function flushCloud(){
+  clearTimeout(flushTimer); flushTimer = null;
+  if (!USER || !ready) return !USER;
+  const user = USER;
+  for (let tries = 0; tries < 3; tries++){
+    if (flushing) await flushing;   // 먼저 보낸 건 옛 내용일 수 있어서, 끝나면 다시 확인해요
+    if (USER !== user) return false;
+    const c = readCache();
+    if (!c || !c.dirty) return true;
+    flushing = pushOnce(user, c).finally(() => { flushing = null; });
+    if (!await flushing) return false;
+  }
+  return !(readCache() || {}).dirty;
 }
 function encodeSave(){ return btoa(unescape(encodeURIComponent(JSON.stringify(S)))); }
 function decodeSave(code){ return JSON.parse(decodeURIComponent(escape(atob(code.trim())))); }
@@ -536,22 +549,41 @@ let pendingName = '', sessionSeq = 0;
 // 로그인되면 기기 사본과 클라우드 중 알맞은 기록을 골라 시작해요
 async function startSession(user){
   const seq = ++sessionSeq;
-  USER = user; S = null; showBox('loadingBox');
+  USER = user; S = null; ready = false; showBox('loadingBox');
   const local = readCache();
   let cloud = null, offline = false;
   try { cloud = await Cloud.load(user.uid); } catch(e) { offline = true; }
   if (seq !== sessionSeq) return;   // 그사이 로그아웃·다른 로그인
-  if (offline && !local){ showBox('offlineBox'); return; }
+  if (offline){
+    if (!local){ showBox('offlineBox'); return; }
+    // 클라우드를 모르니 기기 사본으로 놀기만 해요. 올리기(ready)는 인터넷이 돌아와 클라우드를 확인한 뒤에
+    S = ensureSave(local.data);
+    renderHome();
+    return;
+  }
   const pick = Account.pickStart(local, cloud);
   const isNew = pick.source === 'none';
-  S = ensureSave(isNew ? freshSave(pendingName || user.id) : pick.source === 'local' ? local.data : cloud.data);
+  if (isNew){ S = freshSave(pendingName || user.id); ready = true; save(); }
+  else if (pick.source === 'local'){ S = ensureSave(local.data); writeCache(user.uid, {...local, dirty:true}); }
+  else { S = ensureSave(cloud.data); writeCache(user.uid, {data:S, savedAt:cloud.savedAt, dirty:false, base:cloud.savedAt}); }
   pendingName = '';
-  if (isNew || pick.upload){ save(); flushCloud(); }
-  else try { localStorage.setItem(cacheKey(), JSON.stringify({data:S, savedAt:cloud.savedAt, dirty:false})); } catch(e) {}
-  if (!offline) await runMigration(!isNew);   // 인터넷이 없으면 계정 기록을 몰라서 다음에 물어요
+  ready = true; flushCloud();
+  await runMigration(!isNew);
   if (seq !== sessionSeq) return;
   renderHome();
 }
+// 인터넷 없이 시작했다가 연결되면: 클라우드가 그대로일 때만 이 기기 기록을 올리기 시작해요
+async function resumeOnline(){
+  if (!USER || ready || !S) return;
+  const user = USER, local = readCache();
+  let cloud;
+  try { cloud = await Cloud.load(user.uid); } catch(e) { return; }
+  if (USER !== user || ready) return;
+  const pick = Account.pickStart(local, cloud);
+  if (pick.source === 'cloud') return;   // 그사이 다른 기기가 올렸으면 이번엔 안 올려요. 다음에 열 때 클라우드 기록으로 시작해요
+  ready = true; flushCloud();
+}
+window.addEventListener('online', resumeOnline);
 // 로그인 전 이 기기에 쌓인 기록: 한 기기에서 한 번만 물어요
 function markMigrated(legacy){
   try { localStorage.setItem(KEY + ':migrated', JSON.stringify(legacy)); localStorage.removeItem(KEY); } catch(e) {}
@@ -609,7 +641,7 @@ $('signupBtn').onclick = () => {
 ['suId', 'suPw', 'suPw2', 'suName'].forEach(i => $(i).addEventListener('keydown', e => { if (e.key === 'Enter') $('signupBtn').click(); }));
 $('toSignup').onclick = () => showBox('signupBox');
 $('toLogin').onclick = () => showBox('loginBox');
-$('retryBtn').onclick = () => { if (USER) startSession(USER); };
+$('retryBtn').onclick = () => { if (!window.firebase) location.reload(); else if (USER) startSession(USER); };
 $('continueBtn').onclick = () => {
   unlockAudio(); touchStreak();
   MathGame.pick();
@@ -1119,10 +1151,12 @@ $('prAgain').onclick = startParrot;
 
 renderHome();
 try {
+  if (!window.FIREBASE_CONFIG) throw new Error('config');
+  if (!window.firebase){ showBox('offlineBox'); throw null; }   // 로그인 프로그램을 못 받았어요 (인터넷·학교 망)
   Cloud.init();
-  Cloud.onUser(u => u ? startSession(u) : (sessionSeq++, USER = null, S = null, showBox('loginBox')));
+  Cloud.onUser(u => u ? startSession(u) : (sessionSeq++, USER = null, S = null, ready = false, showBox('loginBox')));
 } catch(e) {
-  $('loadingBox').firstElementChild.textContent = '로그인 준비가 아직 안 됐어요 (Firebase 설정 필요)';
+  if (e) $('loadingBox').firstElementChild.textContent = '로그인 준비가 아직 안 됐어요 (Firebase 설정 필요)';
 }
 </script>
 <script src="boss.js"></script>

@@ -32,9 +32,10 @@ const MESSAGES = {
 };
 const authErrorMessage = code => MESSAGES[code] || '문제가 생겼어요. 잠시 후 다시 해 주세요';
 
-// 게임을 열 때 기기 사본과 클라우드 중 무엇을 쓸까
+// 게임을 열 때 기기 사본과 클라우드 중 무엇을 쓸까 (인터넷이 될 때만 불러요)
+// 기기 사본의 base 는 그 사본이 시작한 클라우드 savedAt. 클라우드가 그대로일 때만 안 올린 플레이를 살려요
 function pickStart(local, cloud){
-  if (local && local.dirty && (!cloud || local.savedAt > cloud.savedAt)) return {source:'local', upload:true};
+  if (local && local.dirty && (!cloud || cloud.savedAt === local.base)) return {source:'local', upload:true};
   if (cloud) return {source:'cloud', upload:false};
   if (local) return {source:'local', upload:true};
   return {source:'none', upload:false};

@@ -40,15 +40,17 @@ test('authErrorMessage hides firebase codes behind plain Korean', () => {
   assert.doesNotMatch(A.authErrorMessage(undefined), /undefined/);
 });
 
-test('pickStart prefers an unsent newer device copy, else the cloud', () => {
-  const L = (savedAt, dirty) => ({data:{n:'L'}, savedAt, dirty}), C = savedAt => ({data:{n:'C'}, savedAt});
+// base = 기기 사본이 시작한 클라우드 버전(savedAt). 기기 시계끼리 비교하지 않아요
+test('pickStart keeps unsent device play only if the cloud has not changed since its base', () => {
+  const L = (base, dirty, savedAt = 999) => ({data:{n:'L'}, savedAt, dirty, base}), C = savedAt => ({data:{n:'C'}, savedAt});
   assert.deepEqual(J(A.pickStart(null, null)), {source:'none', upload:false});
   assert.deepEqual(J(A.pickStart(null, C(5))), {source:'cloud', upload:false});
-  assert.deepEqual(J(A.pickStart(L(9, true), C(5))), {source:'local', upload:true});   // 닫기 직전 플레이
-  assert.deepEqual(J(A.pickStart(L(3, true), C(5))), {source:'cloud', upload:false});  // 다른 기기가 더 최근
-  assert.deepEqual(J(A.pickStart(L(9, false), C(5))), {source:'cloud', upload:false});
-  assert.deepEqual(J(A.pickStart(L(9, true), null)), {source:'local', upload:true});
-  assert.deepEqual(J(A.pickStart(L(9, false), null)), {source:'local', upload:true});  // 클라우드 문서가 사라짐
+  assert.deepEqual(J(A.pickStart(L(5, true), C(5))), {source:'local', upload:true});    // 닫기 직전 플레이, 클라우드 그대로
+  assert.deepEqual(J(A.pickStart(L(5, true, 1), C(5))), {source:'local', upload:true}); // 기기 시계가 늦어도 같아요
+  assert.deepEqual(J(A.pickStart(L(3, true), C(5))), {source:'cloud', upload:false});   // 그사이 다른 기기가 올림
+  assert.deepEqual(J(A.pickStart(L(5, false), C(5))), {source:'cloud', upload:false});
+  assert.deepEqual(J(A.pickStart(L(null, true), null)), {source:'local', upload:true});
+  assert.deepEqual(J(A.pickStart(L(5, false), null)), {source:'local', upload:true});   // 클라우드 문서가 사라짐
 });
 
 test('migrationStep', () => {

@@ -13,8 +13,8 @@ function init(){
   firebase.initializeApp(window.FIREBASE_CONFIG);
   auth = firebase.auth();
   db = firebase.firestore();
-  // 인터넷이 끊겨도 쓰기가 기기에 쌓였다가 다시 연결되면 올라가요
-  db.enablePersistence({synchronizeTabs:true}).catch(() => {});
+  // Firestore 오프라인 저장(persistence)은 일부러 안 켜요: 오래된 쓰기가 나중에 다시 올라가
+  // 다른 기기의 새 기록을 덮을 수 있어서요. 안 올라간 기록은 index.html 의 기기 사본(dirty)이 맡아요.
 }
 
 const toUser = u => u ? {uid:u.uid, id:String(u.email || '').split('@')[0]} : null;
