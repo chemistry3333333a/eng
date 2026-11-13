@@ -245,8 +245,8 @@ function grab(ev, el, b){
 
 $('sPlay').onclick = () => say();
 $('sSlow').onclick = () => say(true);
-$('sQuit').onclick = () => {
-  if (confirm('지도로 갈까요?\n지금까지 한 것은 저장돼서 나중에 이어서 할 수 있어요 😊')){
+$('sQuit').onclick = async () => {
+  if (await askConfirm('지도로 갈까요?\n지금까지 한 것은 저장돼서 나중에 이어서 할 수 있어요 😊')){
     R = null; speak([]); save(); renderMap();
   }
 };

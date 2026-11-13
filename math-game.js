@@ -358,8 +358,8 @@ function finish(){
   setTimeout(() => say(stars === 3 ? '완벽해요! 정말 대단해요!' : '잘했어요!'), 500);
 }
 
-$('mQuit').onclick = () => {
-  if (confirm('지도로 갈까요?\n지금까지 한 것은 저장돼서 나중에 이어서 할 수 있어요 😊')){
+$('mQuit').onclick = async () => {
+  if (await askConfirm('지도로 갈까요?\n지금까지 한 것은 저장돼서 나중에 이어서 할 수 있어요 😊')){
     run++; Q = null; hintHide();
     if (window.Boss) Boss.reset();
     try { if ('speechSynthesis' in window) speechSynthesis.cancel(); } catch(e){}
