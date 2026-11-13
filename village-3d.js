@@ -7,6 +7,7 @@
 import * as THREE from 'three';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 import {RoundedBoxGeometry} from 'three/addons/geometries/RoundedBoxGeometry.js';
+import {makeDoll, animateDoll} from './village-dolls.js';
 
 const R = 7.6;                                   // 섬 반지름 (놓기 반지름 6.2 보다 넉넉히)
 const wob = a => 1 + .05*Math.sin(3*a) + .03*Math.sin(7*a + 1) + .02*Math.sin(11*a + 2);
@@ -264,28 +265,8 @@ function model(F, id){
   return g;
 }
 
-/* ---------- 캐릭터 종이 인형 ---------- */
-const CH_H = 1.25, FEET = (140 + 24)/180;        // avatar-art 의 그림 상자에서 발 위치
-const texCache = new Map();
-function charTex(id){
-  if (texCache.has(id)) return texCache.get(id);
-  const cv = document.createElement('canvas'); cv.width = 256; cv.height = 288;
-  const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 4;
-  const svg = AvatarArt.character({body:id, mood:'smile'}).replace('<svg ', '<svg width="256" height="288" ');
-  const img = new Image();
-  img.onload = () => { cv.getContext('2d').drawImage(img, 0, 0, 256, 288); tex.needsUpdate = true; };
-  img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
-  texCache.set(id, tex); return tex;
-}
-function character(id){
-  const g = new THREE.Group(), tex = charTex(id), W = CH_H*160/180;
-  const geo = new THREE.PlaneGeometry(W, CH_H); geo.translate(0, CH_H*FEET - CH_H/2, 0);
-  const m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({map:tex, transparent:true, alphaTest:.4, side:THREE.DoubleSide}));
-  m.castShadow = true;
-  m.customDepthMaterial = new THREE.MeshDepthMaterial({depthPacking:THREE.RGBADepthPacking, map:tex, alphaTest:.4});
-  g.add(m); g.userData.doll = m;
-  return g;
-}
+/* ---------- 캐릭터: 입체 인형 (village-dolls.js) ---------- */
+const character = id => { const d = makeDoll(id); d.scale.setScalar(.95); return d; };
 
 /* ---------- 섬 ---------- */
 function island(scene, F){
@@ -472,7 +453,7 @@ export async function create(container, {onPick = () => {}, onGround = () => {},
     animate(F, t, dt, nt);
     isl.clouds.forEach(c => { const a = c.userData.a + t*.02; c.position.set(Math.cos(a)*c.userData.r, c.userData.y, Math.sin(a)*c.userData.r); c.lookAt(0, c.userData.y, 0); });
     isl.rocks.forEach(r => r.position.y = r.userData.y + Math.sin(t*.8 + r.userData.ph)*.15);
-    const cp = camera.position, shade = lerp(1, .6, nt);
+    const cp = camera.position;
     for (const o of objs.values()){
       const u = o.userData, e = u.entry;
       if (u.to){ u.k = Math.min(1, u.k + dt*(e.k === 'c' ? 1.6 : 4)); o.position.lerpVectors(u.from, u.to, u.k); if (u.k >= 1){ u.to = null; u.land = 0; } }
@@ -480,16 +461,13 @@ export async function create(container, {onPick = () => {}, onGround = () => {},
       let y = 0;
       if (u.land != null){ u.land += dt*3; y = Math.sin(Math.min(1, u.land)*Math.PI)*(e.k === 'c' ? .35 : .25); if (u.land >= 1) u.land = null; }
       if (e.k === 'c'){
-        const moving = !!u.to;
-        u.body.position.y = y + (moving ? Math.abs(Math.sin(t*10))*.3 : Math.abs(Math.sin(t*2.2 + u.ph))*.05) + (e === selected ? .15 : 0);
-        // 위에서 내려다봐도 납작해 보이지 않게 카메라 쪽으로 살짝 눕혀요 (발이 축)
-        u.body.rotation.order = 'YXZ';
-        u.body.rotation.y = Math.atan2(cp.x - o.position.x, cp.z - o.position.z);
-        u.body.rotation.x = -Math.atan2(cp.y, Math.hypot(cp.x - o.position.x, cp.z - o.position.z))*.55;
-        u.body.userData.doll.material.color.setScalar(shade);
+        // 걸을 땐 가는 쪽, 쉴 땐 카메라 쪽을 봐요. 고르거나 막 내려앉으면 웃어요
+        const walking = !!u.to;
+        const yaw = walking ? Math.atan2(u.to.x - u.from.x, u.to.z - u.from.z) : Math.atan2(cp.x - o.position.x, cp.z - o.position.z);
+        animateDoll(u.body, {t, dt, walking, yaw, nt, happy: e === selected || u.land != null, lift: y + (e === selected ? .1 : 0)});
       } else u.body.position.y = y;
     }
-    if (ghost && ghost.children[0] && ghostEntry.k === 'c'){ const gb = ghost.children[0]; gb.rotation.order = 'YXZ'; gb.rotation.y = Math.atan2(cp.x - ghost.position.x, cp.z - ghost.position.z); gb.rotation.x = -Math.atan2(cp.y, Math.hypot(cp.x - ghost.position.x, cp.z - ghost.position.z))*.55; }
+    if (ghost && ghost.children[0] && ghostEntry.k === 'c') ghost.children[0].rotation.y = Math.atan2(cp.x - ghost.position.x, cp.z - ghost.position.z);
     controls.update(); renderer.render(scene, camera);
     raf = requestAnimationFrame(tick);
   }

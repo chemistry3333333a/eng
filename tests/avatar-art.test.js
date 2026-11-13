@@ -47,3 +47,13 @@ test('two renders never share an svg id', () => {
   for (const x of a) assert.ok(!b.includes(x), x);
 });
 test('unknown equip id is skipped', () => ok(A.character({body:'cat', equip:{hat:'nope', bg:'nope'}, bg:true})));
+
+test('expression and palette for 3D dolls', () => {
+  for (const b of B) {
+    const p = A.palette(b.id);
+    assert.match(p.f, /^#[0-9a-f]{6}$/i, b.id); assert.match(p.l, /^#[0-9a-f]{6}$/i, b.id);
+    for (const m of A.MOODS) assert.doesNotMatch(A.expression(m, p.beak), /undefined|NaN/);
+  }
+  assert.match(A.expression('base', true), /#ffb347/);   // 부리
+  assert.equal(A.palette('nope').f, A.palette('kid1').f);
+});
