@@ -1,0 +1,8 @@
+{
+  "name": "word-island-admin",
+  "private": true,
+  "description": "워드 아일랜드 관리자 도구 (비밀번호 바꾸기)",
+  "dependencies": {
+    "firebase-admin": "14.5.0"
+  }
+}

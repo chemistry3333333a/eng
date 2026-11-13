@@ -43,6 +43,7 @@ function pickStart(local, cloud){
 const migrationStep = (legacy, accountHasData) => !legacy ? 'none' : accountHasData ? 'choose' : 'offer';
 const summary = s => `${s.name} · Lv.${Math.floor((s.xp || 0) / 100) + 1} · 🪙${s.coins || 0}`;
 
-window.Account = {normalizeId, checkId, checkPassword, checkName, idToEmail, authErrorMessage, pickStart, migrationStep, summary};
-if (typeof module !== 'undefined') module.exports = window.Account;
+const Account = {normalizeId, checkId, checkPassword, checkName, idToEmail, authErrorMessage, pickStart, migrationStep, summary};
+if (typeof window !== 'undefined') window.Account = Account;
+if (typeof module !== 'undefined') module.exports = Account;   // admin/reset-password.js 에서 require
 })();

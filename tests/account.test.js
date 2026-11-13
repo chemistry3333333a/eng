@@ -59,3 +59,8 @@ test('migrationStep', () => {
 });
 
 test('summary', () => assert.equal(A.summary({name:'말랑', xp:250, coins:120}), '말랑 · Lv.3 · 🪙120'));
+
+test('account.js can be required from plain node (admin script)', () => {
+  const req = require('../account.js');
+  assert.equal(req.idToEmail('abcd'), 'abcd@wordisland.local');
+});
