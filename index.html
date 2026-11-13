@@ -46,9 +46,12 @@ button{font-family:inherit;color:inherit;cursor:pointer;touch-action:manipulatio
 .home-mons span{display:inline-block;animation:bob 2.2s ease-in-out infinite;}
 .home-mons span:nth-child(2){animation-delay:.3s}.home-mons span:nth-child(3){animation-delay:.6s}
 .namebox{display:flex;flex-direction:column;gap:14px;align-items:center;}
-.namebox input{font-family:inherit;font-size:28px;padding:14px 20px;border-radius:18px;border:4px solid #fff;
+.namebox input{font-family:inherit;font-size:24px;padding:12px 18px;border-radius:18px;border:4px solid #fff;
   text-align:center;width:min(80vw,360px);outline:none;background:#fffbeb;}
 .hello{font-size:30px;margin:0;}
+.authlink{font-size:20px;color:#0369a1;text-decoration:underline;cursor:pointer;}
+.authnote{font-size:15px;margin:0;color:#0c4a6e;opacity:.75;}
+.btn:disabled{opacity:.6;cursor:default;}
 
 /* ---------- Map ---------- */
 .mapbar{display:flex;align-items:center;gap:12px;background:#ffffffcc;border-radius:24px;padding:10px 14px;flex-wrap:wrap;}
@@ -216,9 +219,26 @@ button{font-family:inherit;color:inherit;cursor:pointer;touch-action:manipulatio
   <h1 class="logo">🏝️ 워드 아일랜드</h1>
   <p class="sub">소리를 듣고 몬스터를 잡아라!</p>
   <div class="home-mons"><span>👾</span><span>🎧</span><span>👻</span></div>
-  <div id="newUser" class="namebox">
-    <input id="nameInput" maxlength="10" placeholder="이름을 써 주세요" autocomplete="off">
-    <button class="btn" id="startBtn">모험 시작! 🚀</button>
+  <div id="loadingBox" class="namebox"><p class="hello">불러오는 중… ⏳</p></div>
+  <div id="loginBox" class="namebox" style="display:none">
+    <input id="loginId" maxlength="12" placeholder="아이디" autocomplete="username" autocapitalize="none" spellcheck="false">
+    <input id="loginPw" type="password" placeholder="비밀번호" autocomplete="current-password">
+    <button class="btn" id="loginBtn">들어가기 🚀</button>
+    <a class="authlink" id="toSignup">처음이에요 (가입하기)</a>
+    <p class="authnote">비밀번호를 잊으면 관리자에게 말해 주세요</p>
+  </div>
+  <div id="signupBox" class="namebox" style="display:none">
+    <input id="suId" maxlength="12" placeholder="아이디 (영어 소문자·숫자 4~12자)" autocomplete="username" autocapitalize="none" spellcheck="false">
+    <input id="suPw" type="password" placeholder="비밀번호 (6자 이상)" autocomplete="new-password">
+    <input id="suPw2" type="password" placeholder="비밀번호 한 번 더" autocomplete="new-password">
+    <input id="suName" maxlength="10" placeholder="부를 이름" autocomplete="off">
+    <button class="btn" id="signupBtn">가입하기 ✨</button>
+    <a class="authlink" id="toLogin">이미 아이디가 있어요</a>
+    <p class="authnote">비밀번호를 잊으면 관리자에게 말해 주세요</p>
+  </div>
+  <div id="offlineBox" class="namebox" style="display:none">
+    <p class="hello">인터넷 연결을 확인해 주세요 📶</p>
+    <button class="btn" id="retryBtn">다시 시도</button>
   </div>
   <div id="oldUser" class="namebox" style="display:none">
     <p class="hello" id="helloTxt"></p>
@@ -324,11 +344,12 @@ button{font-family:inherit;color:inherit;cursor:pointer;touch-action:manipulatio
 <div class="modal" id="setModal">
   <div class="panel">
     <h2>⚙️ 설정·백업</h2>
+    <div class="row"><p id="acctTxt"></p><button class="btn gray small" id="logoutBtn">로그아웃</button></div>
     <p>말하기 속도</p>
     <div class="row" id="rateRow"></div>
     <p>🔓 모든 스테이지 열기 (보스 미리보기·테스트용)</p>
     <div class="row"><button class="btn small" id="openAllBtn"></button></div>
-    <p>📦 백업 코드 (다른 기기로 옮기거나 기록이 지워졌을 때 사용해요)</p>
+    <p>📦 백업 코드 (기록이 지워졌을 때 사용해요)</p>
     <textarea id="backupOut" readonly></textarea>
     <button class="btn blue small" id="copyBtn">코드 복사</button>
     <p>♻️ 백업 코드로 복구하기</p>
@@ -341,6 +362,22 @@ button{font-family:inherit;color:inherit;cursor:pointer;touch-action:manipulatio
   </div>
 </div>
 
+<!-- 옛 기록 고르기 (기기 기록 vs 계정 기록) -->
+<div class="modal" id="pickModal">
+  <div class="panel">
+    <h2>어떤 기록으로 할까요?</h2>
+    <p>이 기기에 로그인 전 기록이 있어요. 하나만 고를 수 있어요.</p>
+    <button class="btn blue small" id="pickLegacy"></button>
+    <button class="btn green small" id="pickAccount"></button>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script src="firebase-config.js"></script>
+<script src="account.js"></script>
+<script src="cloud.js"></script>
 <script src="words.js"></script>
 <script src="sentences.js"></script>
 <script src="items.js"></script>
@@ -375,17 +412,57 @@ let S = null;
 function freshSave(name){
   return MathStages.ensure(Avatar.ensure({v:1, name, xp:0, coins:0, stages:{}, words:{}, streak:{n:0,last:''}, settings:{rate:0.85}, session:null, parrot:{best:0,played:0}}));
 }
-function loadSave(){
-  try { const raw = localStorage.getItem(KEY); if (raw) return JSON.parse(raw); } catch(e) {}
+// 로그인한 사람(USER)의 기록은 기기 사본(cacheKey)에 바로, 클라우드에는 가끔 올려요
+let USER = null, flushTimer = null, flushing = null;
+const CLOUD_EVERY = 30000, FLUSH_TIMEOUT = 8000;
+const cacheKey = () => KEY + ':' + USER.uid;
+function readJSON(k){
+  try { const raw = localStorage.getItem(k); if (raw) return JSON.parse(raw); } catch(e) {}
   return null;
 }
+function readCache(){ return USER ? readJSON(cacheKey()) : null; }
+// 로그인 전에 이 기기에 쌓인 옛 기록 (이미 처리했으면 없음)
+function loadLegacy(){ return readJSON(KEY + ':migrated') ? null : readJSON(KEY); }
+// 기기 사본 = {data, savedAt, dirty, base}. base 는 이 사본이 시작한 클라우드 savedAt (Account.pickStart)
+let ready = false;   // startSession 이 기록을 고른 뒤에만 클라우드에 올려요
+function writeCache(uid, c){ try { localStorage.setItem(KEY + ':' + uid, JSON.stringify(c)); } catch(e) {} }
 function save(){
-  try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e) {}
+  if (!S || !USER) return;
+  const old = readCache();
+  const savedAt = Math.max(Date.now(), old ? old.savedAt + 1 : 0);   // 같은 ms 에 두 번 저장해도 구분돼요
+  writeCache(USER.uid, {data:S, savedAt, dirty:true, base:old ? old.base : null});
+  if (!flushTimer) flushTimer = setTimeout(flushCloud, CLOUD_EVERY);
+}
+// 기기 사본 한 번 올리기 → true/false
+function pushOnce(user, c){
+  let timer;
+  const timeout = new Promise(r => { timer = setTimeout(() => r(false), FLUSH_TIMEOUT); });
+  const put = Cloud.write(user.uid, user.id, c.data, c.savedAt).then(() => {
+    const now = readJSON(KEY + ':' + user.uid);
+    if (now){ now.base = c.savedAt; if (now.savedAt === c.savedAt) now.dirty = false; writeCache(user.uid, now); }   // 그사이 새로 저장했으면 dirty 유지
+    return true;
+  }, () => false);
+  return Promise.race([put, timeout]).finally(() => clearTimeout(timer));
+}
+// 기기 사본의 "지금" 내용이 다 올라갈 때까지 올려요. 다 올라갔거나 올릴 게 없으면 true
+async function flushCloud(){
+  clearTimeout(flushTimer); flushTimer = null;
+  if (!USER || !ready) return !USER;
+  const user = USER;
+  for (let tries = 0; tries < 3; tries++){
+    if (flushing) await flushing;   // 먼저 보낸 건 옛 내용일 수 있어서, 끝나면 다시 확인해요
+    if (USER !== user) return false;
+    const c = readCache();
+    if (!c || !c.dirty) return true;
+    flushing = pushOnce(user, c).finally(() => { flushing = null; });
+    if (!await flushing) return false;
+  }
+  return !(readCache() || {}).dirty;
 }
 function encodeSave(){ return btoa(unescape(encodeURIComponent(JSON.stringify(S)))); }
 function decodeSave(code){ return JSON.parse(decodeURIComponent(escape(atob(code.trim())))); }
-document.addEventListener('visibilitychange', () => { if (S) save(); });
-window.addEventListener('pagehide', () => { if (S) save(); });
+document.addEventListener('visibilitychange', () => { if (S && document.visibilityState === 'hidden'){ save(); flushCloud(); } });
+window.addEventListener('pagehide', () => { if (S){ save(); flushCloud(); } });
 
 const today = () => { const d = new Date(); return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); };
 function touchStreak(){
@@ -445,7 +522,7 @@ function unlockAudio(){ speak(' ', 1, 0); tone(1,.01); }   // 첫 터치 때 소
 
 /* ================== 공용 ================== */
 const $ = id => document.getElementById(id);
-function show(id){ document.querySelectorAll('.screen').forEach(s => s.classList.toggle('on', s.id === id)); }
+function show(id){ document.querySelectorAll('.screen').forEach(s => s.classList.toggle('on', s.id === id)); flushCloud(); }
 const shuffle = a => { a = a.slice(); for (let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; };
 function toast(msg, ms){
   const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg;
@@ -459,26 +536,112 @@ function floatText(el, text){
 }
 
 /* ================== 홈 ================== */
+const HOME_BOXES = ['loadingBox', 'loginBox', 'signupBox', 'offlineBox', 'oldUser'];
+function showBox(id){ HOME_BOXES.forEach(b => $(b).style.display = b === id ? 'flex' : 'none'); show('home'); }
 function renderHome(){
-  S = loadSave();
-  if (S){ Avatar.ensure(S); MathStages.ensure(S); }
-  if (S){
-    $('newUser').style.display = 'none'; $('oldUser').style.display = 'flex';
-    $('helloTxt').textContent = `안녕, ${S.name}! 🔥 ${S.streak.n}일째 · Lv.${level()}`;
-    $('continueBtn').textContent = (S.session || (S.math && S.math.session)) ? '▶ 하던 게임 이어하기' : '▶ 이어하기';
-  } else {
-    $('newUser').style.display = 'flex'; $('oldUser').style.display = 'none';
-  }
-  show('home');
+  if (!S){ showBox('loadingBox'); return; }
+  $('helloTxt').textContent = `안녕, ${S.name}! 🔥 ${S.streak.n}일째 · Lv.${level()}`;
+  $('continueBtn').textContent = (S.session || (S.math && S.math.session)) ? '▶ 하던 게임 이어하기' : '▶ 이어하기';
+  showBox('oldUser');
 }
-$('startBtn').onclick = () => {
-  const name = $('nameInput').value.trim();
-  if (!name){ $('nameInput').focus(); toast('이름을 써 주세요!'); return; }
+const ensureSave = s => MathStages.ensure(Avatar.ensure(s));
+let pendingName = '', sessionSeq = 0;
+// 로그인되면 기기 사본과 클라우드 중 알맞은 기록을 골라 시작해요
+async function startSession(user){
+  const seq = ++sessionSeq;
+  USER = user; S = null; ready = false; showBox('loadingBox');
+  const local = readCache();
+  let cloud = null, offline = false;
+  try { cloud = await Cloud.load(user.uid); } catch(e) { offline = true; }
+  if (seq !== sessionSeq) return;   // 그사이 로그아웃·다른 로그인
+  if (offline){
+    if (!local){ showBox('offlineBox'); return; }
+    // 클라우드를 모르니 기기 사본으로 놀기만 해요. 올리기(ready)는 인터넷이 돌아와 클라우드를 확인한 뒤에
+    S = ensureSave(local.data);
+    renderHome();
+    return;
+  }
+  const pick = Account.pickStart(local, cloud);
+  const isNew = pick.source === 'none';
+  if (isNew){ S = freshSave(pendingName || user.id); ready = true; save(); }
+  else if (pick.source === 'local'){ S = ensureSave(local.data); writeCache(user.uid, {...local, dirty:true}); }
+  else { S = ensureSave(cloud.data); writeCache(user.uid, {data:S, savedAt:cloud.savedAt, dirty:false, base:cloud.savedAt}); }
+  pendingName = '';
+  ready = true; flushCloud();
+  await runMigration(!isNew);
+  if (seq !== sessionSeq) return;
+  renderHome();
+}
+// 인터넷 없이 시작했다가 연결되면: 클라우드가 그대로일 때만 이 기기 기록을 올리기 시작해요
+async function resumeOnline(){
+  if (!USER || ready || !S) return;
+  const user = USER, local = readCache();
+  let cloud;
+  try { cloud = await Cloud.load(user.uid); } catch(e) { return; }
+  if (USER !== user || ready) return;
+  const pick = Account.pickStart(local, cloud);
+  if (pick.source === 'cloud') return;   // 그사이 다른 기기가 올렸으면 이번엔 안 올려요. 다음에 열 때 클라우드 기록으로 시작해요
+  ready = true; flushCloud();
+}
+window.addEventListener('online', resumeOnline);
+// 로그인 전 이 기기에 쌓인 기록: 한 기기에서 한 번만 물어요
+function markMigrated(legacy){
+  try { localStorage.setItem(KEY + ':migrated', JSON.stringify(legacy)); localStorage.removeItem(KEY); } catch(e) {}
+}
+function askPick(legacy){
+  return new Promise(resolve => {
+    $('pickLegacy').textContent = '📱 이 기기 기록: ' + Account.summary(legacy);
+    $('pickAccount').textContent = '☁️ 계정 기록: ' + Account.summary(S);
+    const done = useLegacy => { $('pickModal').classList.remove('on'); resolve(useLegacy); };
+    $('pickLegacy').onclick = () => done(true);
+    $('pickAccount').onclick = () => done(false);
+    $('pickModal').classList.add('on');
+  });
+}
+async function runMigration(accountHasData){
+  const legacy = loadLegacy();
+  const step = Account.migrationStep(legacy, accountHasData);
+  if (step === 'none') return;
+  const useLegacy = step === 'offer'
+    ? confirm(`이 기기에 있던 '${legacy.name}'의 기록을 이 계정으로 가져올까요?`)
+    : await askPick(legacy);
+  if (!useLegacy){ markMigrated(legacy); return; }
+  S = ensureSave(legacy); save();
+  if (await flushCloud()) markMigrated(legacy);   // 못 올렸으면 다음 로그인에 다시 물어요 (기기 사본은 남아요)
+}
+// 로그인·가입 버튼: 요청하는 동안 막아서 연타해도 한 번만
+async function authSubmit(btn, busyText, fn){
+  if (btn.disabled) return;
+  const label = btn.textContent;
+  btn.disabled = true; btn.textContent = busyText;
+  try {
+    await fn();
+    // 같은 기기를 다음 사람이 쓸 때 비밀번호가 남아 있지 않게 비워요
+    ['loginId', 'loginPw', 'suId', 'suPw', 'suPw2', 'suName'].forEach(i => $(i).value = '');
+  }
+  catch(e){ toast(Account.authErrorMessage(e && e.code), 2400); }
+  finally { btn.disabled = false; btn.textContent = label; }
+}
+$('loginBtn').onclick = () => {
+  const id = Account.normalizeId($('loginId').value), pw = $('loginPw').value;
+  const bad = Account.checkId(id) || Account.checkPassword(pw);
+  if (bad){ toast(bad, 2400); return; }
   unlockAudio();
-  S = freshSave(name); touchStreak(); save();
-  MathGame.pick();
+  authSubmit($('loginBtn'), '들어가는 중…', () => Cloud.signIn(id, pw));
 };
-$('nameInput').addEventListener('keydown', e => { if (e.key === 'Enter') $('startBtn').click(); });
+$('signupBtn').onclick = () => {
+  const id = Account.normalizeId($('suId').value), pw = $('suPw').value, name = $('suName').value.trim();
+  const bad = Account.checkId(id) || Account.checkPassword(pw, $('suPw2').value) || Account.checkName(name);
+  if (bad){ toast(bad, 2400); return; }
+  unlockAudio();
+  pendingName = name;
+  authSubmit($('signupBtn'), '만드는 중…', () => Cloud.signUp(id, pw));
+};
+['loginId', 'loginPw'].forEach(i => $(i).addEventListener('keydown', e => { if (e.key === 'Enter') $('loginBtn').click(); }));
+['suId', 'suPw', 'suPw2', 'suName'].forEach(i => $(i).addEventListener('keydown', e => { if (e.key === 'Enter') $('signupBtn').click(); }));
+$('toSignup').onclick = () => showBox('signupBox');
+$('toLogin').onclick = () => showBox('loginBox');
+$('retryBtn').onclick = () => { if (!window.firebase) location.reload(); else if (USER) startSession(USER); };
 $('continueBtn').onclick = () => {
   unlockAudio(); touchStreak();
   MathGame.pick();
@@ -775,8 +938,8 @@ function renderOpenAll(){
   b.className = 'btn small ' + (on ? 'green' : 'gray');
 }
 $('openAllBtn').onclick = () => { S.settings.openAll = !S.settings.openAll; save(); renderOpenAll(); (S.mode === 'math' ? MathGame.map() : renderMap()); $('setModal').classList.add('on'); };
-$('setBtn').onclick = () => { renderRates(); renderOpenAll(); $('backupOut').value = encodeSave(); $('backupIn').value = ''; $('setModal').classList.add('on'); };
-$('setClose').onclick = () => $('setModal').classList.remove('on');
+$('setBtn').onclick = () => { $('acctTxt').textContent = USER ? `🔑 아이디: ${USER.id}` : ''; renderRates(); renderOpenAll(); $('backupOut').value = encodeSave(); $('backupIn').value = ''; $('setModal').classList.add('on'); };
+$('setClose').onclick = () => { $('setModal').classList.remove('on'); flushCloud(); };
 $('copyBtn').onclick = async () => {
   const t = $('backupOut');
   try { await navigator.clipboard.writeText(t.value); toast('복사했어요! 메모장 등에 붙여 넣어 보관하세요 📋', 2400); }
@@ -787,14 +950,25 @@ $('restoreBtn').onclick = () => {
     const data = decodeSave($('backupIn').value);
     if (!data || !data.name || !data.words) throw 0;
     if (!confirm(`'${data.name}'의 기록으로 바꿀까요?`)) return;
-    S = MathStages.ensure(Avatar.ensure(data)); save(); $('setModal').classList.remove('on'); (S.mode === 'math' ? MathGame.map() : renderMap()); toast('복구 완료! ✅');
+    S = MathStages.ensure(Avatar.ensure(data)); save(); flushCloud(); $('setModal').classList.remove('on'); (S.mode === 'math' ? MathGame.map() : renderMap()); toast('복구 완료! ✅');
   } catch(e){ toast('코드가 올바르지 않아요 😢'); }
 };
 $('resetBtn').onclick = () => {
   if (!confirm('정말 처음부터 다시 할까요? 모든 기록이 지워져요!')) return;
   if (!confirm('정말요? 되돌릴 수 없어요!')) return;
-  try { localStorage.removeItem(KEY); } catch(e) {}
-  S = null; $('setModal').classList.remove('on'); renderHome();
+  S = freshSave(S.name); touchStreak(); save(); flushCloud();
+  $('setModal').classList.remove('on'); MathGame.pick();
+};
+$('logoutBtn').onclick = async () => {
+  const btn = $('logoutBtn');
+  if (btn.disabled) return;
+  btn.disabled = true;
+  try {
+    if (!await flushCloud()){ toast('인터넷이 연결되면 다시 해 주세요 📶', 2400); return; }
+    try { localStorage.removeItem(cacheKey()); } catch(e) {}
+    speak([]); $('setModal').classList.remove('on');
+    await Cloud.signOut();   // onUser(null) 이 로그인 화면을 띄워요
+  } finally { btn.disabled = false; }
 };
 
 /* ================== 앵무새탐정 ================== */
@@ -976,6 +1150,14 @@ $('prMap').onclick = renderMap;
 $('prAgain').onclick = startParrot;
 
 renderHome();
+try {
+  if (!window.FIREBASE_CONFIG) throw new Error('config');
+  if (!window.firebase){ showBox('offlineBox'); throw null; }   // 로그인 프로그램을 못 받았어요 (인터넷·학교 망)
+  Cloud.init();
+  Cloud.onUser(u => u ? startSession(u) : (sessionSeq++, USER = null, S = null, ready = false, showBox('loginBox')));
+} catch(e) {
+  if (e) $('loadingBox').firstElementChild.textContent = '로그인 준비가 아직 안 됐어요 (Firebase 설정 필요)';
+}
 </script>
 <script src="boss.js"></script>
 <script src="shop.js"></script>
