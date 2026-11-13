@@ -414,10 +414,16 @@ export async function create(container, {onPick = () => {}, onGround = () => {},
   const aim = e => { const r = el.getBoundingClientRect(); ptr.set((e.clientX - r.left)/r.width*2 - 1, -(e.clientY - r.top)/r.height*2 + 1); ray.setFromCamera(ptr, camera); };
   const groundAt = () => { const p = new THREE.Vector3(); return ray.ray.intersectPlane(plane, p) && Math.hypot(p.x, p.z) < R ? {x:Village.snap(p.x), z:Village.snap(p.z)} : null; };
   let down = null;
-  const onDown = e => { down = [e.clientX, e.clientY]; controls.autoRotate = false; };
+  const onDown = e => { down = [e.clientX, e.clientY, performance.now()]; controls.autoRotate = false; };
+  // 탭인지 끌기(돌리기)인지: 손가락은 탭해도 조금 흔들려서 터치는 넉넉히, 짧게 누른 건 조금 더 움직여도 탭으로 봐요
+  const isTap = e => {
+    const moved = Math.hypot(e.clientX - down[0], e.clientY - down[1]), quick = performance.now() - down[2] < 300;
+    const tol = e.pointerType === 'mouse' ? 6 : 16;
+    return moved <= tol || (quick && moved <= 28);
+  };
   const onMove = e => { if (!ghost || e.pointerType === 'touch') return; aim(e); const g = groundAt(); if (g) moveGhost(g.x, g.z); else ghost.visible = false; };
   const onUp = e => {
-    if (!down || Math.hypot(e.clientX - down[0], e.clientY - down[1]) > 6) return;
+    if (!down || !isTap(e)) return;
     down = null; aim(e);
     if (!ghost){
       const hits = ray.intersectObjects([...objs.values()], true);
