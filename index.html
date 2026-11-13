@@ -582,7 +582,11 @@ async function authSubmit(btn, busyText, fn){
   if (btn.disabled) return;
   const label = btn.textContent;
   btn.disabled = true; btn.textContent = busyText;
-  try { await fn(); }
+  try {
+    await fn();
+    // 같은 기기를 다음 사람이 쓸 때 비밀번호가 남아 있지 않게 비워요
+    ['loginId', 'loginPw', 'suId', 'suPw', 'suPw2', 'suName'].forEach(i => $(i).value = '');
+  }
   catch(e){ toast(Account.authErrorMessage(e && e.code), 2400); }
   finally { btn.disabled = false; btn.textContent = label; }
 }
