@@ -55,6 +55,63 @@ const css = `
 #shop .sp-bar{min-height:44px;}
 #shop .sp-bar .btn{font-size:18px;padding:6px 12px;}
 }
+/* 마을 탭: 장터 가판대 (줄무늬 차양 아래 진열대 + 나무 선반 + 매단 가격표) */
+#shop.vill .sp-prev{position:relative;overflow:hidden;align-items:stretch;justify-content:flex-start;gap:8px;padding:30px 16px 0;
+  background:#9fd8ff;border-radius:26px 26px 6px 6px;border-bottom:14px solid #8a5a34;box-shadow:inset 0 -5px 0 #b07b4a;}
+#shop.vill .sp-prev::before{content:'';position:absolute;left:0;right:0;top:0;height:22px;
+  background:repeating-linear-gradient(90deg,#e5484d 0 36px,#fff 36px 72px);}
+#shop.vill .sp-prev::after{content:'';position:absolute;left:0;right:0;top:22px;height:12px;
+  background:radial-gradient(circle at 18px 0,#e5484d 17px,transparent 18px) 0 0/72px 12px,
+             radial-gradient(circle at 54px 0,#fff 17px,transparent 18px) 0 0/72px 12px;}
+#shop .vs-stage{flex:1;min-width:0;display:flex;align-items:center;justify-content:center;}
+#shop .vs-emo{font-size:90px;}
+#shop .vs-ptag{flex:none;align-self:center;position:relative;width:168px;background:#fff6d8;border-radius:6px 22px 22px 6px;
+  padding:10px 12px 10px 24px;box-shadow:0 4px 0 #c9a35e;transform:rotate(3deg);transform-origin:10px 50%;text-align:left;}
+#shop .vs-ptag::before{content:'';position:absolute;left:9px;top:50%;width:8px;height:8px;margin-top:-4px;border-radius:50%;
+  background:#9fd8ff;box-shadow:inset 0 1px 2px rgba(0,0,0,.3);}
+#shop .vs-en{font-size:30px;line-height:1.05;color:#8a5a34;overflow-wrap:anywhere;}
+#shop .vs-en span{font-size:17px;margin-left:4px;}
+#shop .vs-ko{font-size:17px;margin:3px 0 6px;}
+#shop .vs-sz{font-size:14px;color:#6b5a3e;line-height:1.35;}
+#shop.vill .sp-bar{margin-top:auto;}
+#shop.vill .sp-grid{flex:0 1 auto;display:block;background:#f4d9a8;border-radius:6px 6px 22px 22px;padding:2px 8px 8px;}
+#shop .vs-h{margin:8px 4px 0;font-size:17px;font-weight:normal;color:#6b4423;}
+#shop .vs-shelf{--pk:72px;--row:124px;display:grid;grid-template-columns:repeat(auto-fill,minmax(82px,1fr));grid-auto-rows:var(--row);column-gap:6px;
+  background:repeating-linear-gradient(to bottom,transparent 0 var(--pk),#a86f3d var(--pk) calc(var(--pk) + 10px),
+    rgba(107,68,35,.25) calc(var(--pk) + 10px) calc(var(--pk) + 14px),transparent calc(var(--pk) + 14px) var(--row));}
+#shop .vs-it{border:0;background:none;padding:0;min-width:0;display:flex;flex-direction:column;align-items:center;}
+#shop .vs-pic{height:var(--pk);width:66px;display:flex;align-items:flex-end;justify-content:center;font-size:40px;line-height:1;}
+#shop .vs-pic img{display:block;width:64px !important;height:64px !important;}
+#shop .vs-tag{position:relative;margin-top:22px;font-size:14px;background:#fff;border-radius:8px;padding:2px 7px;white-space:nowrap;box-shadow:0 2px 0 #d6b98a;}
+#shop .vs-tag::before{content:'';position:absolute;left:50%;top:-12px;height:12px;border-left:2px solid #6b4423;}
+#shop .vs-nm{font-size:13px;margin-top:3px;color:#6b4423;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+#shop .vs-it.own .vs-tag{background:#3fae5a;color:#fff;box-shadow:0 2px 0 #2b7d3f;}
+#shop .vs-it.lock .vs-pic{filter:grayscale(.9) brightness(1.1);opacity:.55;}
+#shop .vs-it.lock .vs-tag{background:#e8e1d3;color:#6b5a3e;}
+#shop .vs-it.gift .vs-tag{background:#ffe1f0;color:#b0306a;box-shadow:0 2px 0 #f4a8cb;}
+#shop .vs-it.legend .vs-nm{color:#a16207;}
+#shop .vs-it.sel .vs-pic{animation:vsBob .9s ease-in-out infinite alternate;}
+#shop .vs-it.sel .vs-tag{outline:3px solid #e5484d;}
+#shop .vs-it:focus-visible{outline:3px solid #1d4ed8;outline-offset:2px;border-radius:10px;}
+@keyframes vsBob{to{transform:translateY(-6px);}}
+@media (prefers-reduced-motion:reduce){#shop .vs-it.sel .vs-pic{animation:none;}}
+#shop.vill .sp-bar .btn.blue{background:#e5484d;box-shadow:0 6px 0 #9b2c31;}
+@media (max-height:500px){
+#shop.vill .sp-prev{padding-top:16px;border-bottom-width:8px;}
+#shop.vill .sp-prev::before{height:10px;}
+#shop.vill .sp-prev::after{top:10px;height:6px;}
+#shop .vs-emo{font-size:44px;}
+#shop .vs-ptag{width:auto;padding:4px 10px 4px 20px;display:flex;align-items:baseline;gap:8px;transform:none;}
+#shop .vs-ptag::before{left:7px;}
+#shop .vs-en{font-size:22px;}
+#shop .vs-ko{margin:0;font-size:15px;}
+#shop .vs-sz{display:none;}
+#shop .vs-shelf{--pk:52px;--row:92px;}
+#shop .vs-pic img{width:48px !important;height:48px !important;}
+#shop .vs-tag{margin-top:16px;font-size:12px;}
+#shop .vs-tag::before{top:-10px;height:10px;}
+#shop .vs-nm{display:none;}
+}
 #shopModal .row{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;}
 #shopModal .pv{height:150px;display:flex;align-items:center;justify-content:center;}
 #shopModal .opt{border:3px solid transparent;border-radius:20px;background:#f1f5f9;padding:8px 14px;box-shadow:0 4px 0 rgba(0,0,0,.1);font-size:48px;line-height:1.2;}
@@ -125,6 +182,7 @@ function refresh(){
   });
   const col = Avatar.collection();
   $('shopCol').textContent = `캐릭터 ${col.have}/${col.total}`;
+  sec.classList.toggle('vill', tab === 'village');
   if (tab === 'village') drawDecorPreview();
   else {
     stopSpin();
@@ -154,15 +212,18 @@ function drawGrid(){
   const ic = coinIcon(cur);
   if (tab === 'village'){
     loadDecorThumbs();
-    Village.list(cur).forEach(d => {
-      const n = Village.owned(d.id), open = Village.isUnlocked(d);
-      let status;
-      if (d.price == null) status = n ? `보유 ${n}` : `🎁 ${Village.giftText(d).replace(' 선물', '')}`;
-      else if (!open && !n) status = `🔒${UNLOCK_ICON(d.unlock)}`;
-      else if (d.stack) status = n ? `${n}개 · ${ic}${d.price}` : `${ic}${d.price}`;
-      else status = n ? '보유' : `${ic}${d.price}`;
-      cell((n ? 'worn ' : '') + (!n && (!open || d.price == null) ? 'lock ' : '') + (d.legend ? 'legend ' : '') + (sel === d.id ? 'sel' : ''),
-        dthumb(d), d.name, status, () => pickDecor(d));
+    const list = Village.list(cur);
+    [['building', '집과 건물'], ['decor', '꾸미기']].forEach(([kind, title]) => {
+      const row = list.filter(d => d.kind === kind);
+      if (!row.length) return;
+      mk(g, 'h3', 'vs-h', title);
+      const shelf = mk(g, 'div', 'vs-shelf');
+      row.forEach(d => {
+        const [c, t] = decorTag(d);
+        const b = mk(shelf, 'button', `vs-it ${c}${d.legend ? ' legend' : ''}${sel === d.id ? ' sel' : ''}`,
+          `<span class="vs-pic">${dthumb(d)}</span><span class="vs-tag">${t}</span><span class="vs-nm">${d.name}</span>`, () => pickDecor(d));
+        b.setAttribute('aria-label', `${d.name} ${t}`);
+      });
     });
     return;
   }
@@ -199,17 +260,38 @@ function pickDecor(d){
   if (d.cur === 'eng') speak(d.word);
   refresh();
 }
-// 마을 탭 미리보기: 고른 장식이 3D 로 돌아가요
+// 선반 가격표: [모양, 글자] — 보유(초록) · 선물(분홍) · 잠김(회색) · 살 수 있음(흰색)
+const lockShort = u => u.level ? `Lv${u.level}` : u.trophies ? `🏆${u.trophies}` : u.mathTrophies ? `🏆${u.mathTrophies}` : `📚${u.dex}`;
+function decorTag(d){
+  const n = Village.owned(d.id), ic = coinIcon(d.cur);
+  if (d.price == null) return n ? ['own', n > 1 ? `${n}개` : '내 거'] : ['gift', '🎁 선물'];
+  if (!n && !Village.isUnlocked(d)) return ['lock', `🔒 ${lockShort(d.unlock)}`];
+  if (n && !d.stack) return ['own', '내 거'];
+  return n ? ['own', `${n}개 · ${ic}${d.price}`] : ['', `${ic} ${d.price}`];
+}
+// 진열대 가격표 아랫줄: 지금 이 장식이 어떤 상태인지 말로 알려 줘요
+function decorStatus(d){
+  const n = Village.owned(d.id);
+  if (d.price == null) return n ? `${n}개 가지고 있어요` : `${Village.giftText(d)}로 받아요`;
+  if (!n && !Village.isUnlocked(d)) return `🔒 ${Village.lockText(d)}`;
+  if (n && !d.stack) return '이미 가지고 있어요';
+  return n ? `${n}개 있어요 · 더 살 수 있어요` : `${coinIcon(d.cur)} ${d.price}`;
+}
+// 마을 탭 미리보기: 진열대에서 고른 장식이 3D 로 돌고, 옆에 가격표가 매달려요
 function drawDecorPreview(){
   const el = $('shopPrev');
-  if (!sel){ stopSpin(); el.innerHTML = '<span class="hint" style="font-size:20px;color:#475569">🏡 장식을 눌러서 구경해요</span>'; return; }
+  let stage = el.querySelector('.vs-stage');
+  if (!stage){ stopSpin(); el.innerHTML = '<div class="vs-stage"></div><div class="vs-ptag"></div>'; stage = el.querySelector('.vs-stage'); }
+  const ptag = el.querySelector('.vs-ptag');
+  if (!sel){ stopSpin(); stage.innerHTML = '<span class="vs-emo">🏡</span>'; ptag.innerHTML = '<div class="vs-ko">장식을 눌러서 구경해요</div>'; return; }
+  const d = Village.item(sel);
+  ptag.innerHTML = `<div class="vs-en">${d.word}${d.cur === 'eng' ? '<span aria-hidden="true">🔊</span>' : ''}</div><div class="vs-ko">${d.name}</div><div class="vs-sz">땅 ${d.w}×${d.d}칸<br>${decorStatus(d)}</div>`;
   if (spinId === sel) return;
   stopSpin(); spinId = sel;
-  const d = Village.item(sel);
-  el.innerHTML = `<span style="font-size:90px">${d.icon}</span>`;
+  stage.innerHTML = `<span class="vs-emo">${d.icon}</span>`;
   if (!window.VillageScreen) return;
   const id = sel;
-  spin = VillageScreen.load3d().then(m => spinId === id ? m.spinPreview(el, id) : null).catch(() => null);
+  spin = VillageScreen.load3d().then(m => spinId === id ? m.spinPreview(stage, id) : null).catch(() => null);
 }
 function villageBar(bar){
   const go = document.createElement('button');
@@ -434,7 +516,8 @@ function leave(){
 }
 sBtn.onclick = () => open();
 // 미리보기 캐릭터를 누르면 여러 표정을 보여 줘요
-$('shopPrev').onclick = () => Avatar.react($('shopPrev'), PREVIEW_MOODS[Math.floor(Math.random() * PREVIEW_MOODS.length)]);
+// 마을 탭에서는 고른 장식의 영어 단어를 다시 읽어 줘요
+$('shopPrev').onclick = () => tab === 'village' ? (sel && Village.item(sel).cur === 'eng' && speak(Village.item(sel).word)) : Avatar.react($('shopPrev'), PREVIEW_MOODS[Math.floor(Math.random() * PREVIEW_MOODS.length)]);
 $('shopBack').onclick = leave;
 
 window.Shop = {open};

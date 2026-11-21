@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>마을 상점 시안</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Jua&family=Gaegu:wght@400;700&display=swap" rel="stylesheet">
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+<style>
+*{box-sizing:border-box;}
+body{margin:0;font-family:"Jua","Malgun Gothic",sans-serif;color:#1f2a44;
+  background:linear-gradient(#7cc7ff,#bdf0d8) fixed;min-height:100vh;}
+button{font-family:inherit;color:inherit;cursor:pointer;border:0;background:none;padding:0;}
+button:focus-visible{outline:3px solid #1d4ed8;outline-offset:2px;}
+.page{max-width:1340px;margin:0 auto;padding:28px 16px 60px;}
+.page>h1{font-size:34px;margin:0 0 4px;}
+.page>p{margin:0 0 24px;font-size:18px;color:#334155;max-width:62ch;}
+.row{display:flex;gap:28px;flex-wrap:wrap;justify-content:center;align-items:flex-start;}
+.opt{width:400px;max-width:100%;}
+.opt h2{font-size:24px;margin:0 0 4px;}
+.opt .why{font-size:16px;color:#334155;margin:0 0 12px;min-height:3.2em;line-height:1.45;}
+.frame{height:760px;border-radius:30px;overflow:hidden;position:relative;display:flex;flex-direction:column;
+  box-shadow:0 0 0 8px #1f2a44,0 20px 40px rgba(31,42,68,.25);}
+.th{display:block;width:100%;height:100%;object-fit:contain;}
+.th.emo{display:flex;align-items:center;justify-content:center;font-size:44px;}
+.coin{font-size:18px;}
+
+/* ===================== A. 장터 가판대 ===================== */
+.A{background:#7cc7ff;}
+.A .awn{flex:none;height:78px;position:relative;
+  background:repeating-linear-gradient(90deg,#e5484d 0 40px,#fff 40px 80px);}
+.A .awn::after{content:'';position:absolute;left:0;right:0;bottom:-14px;height:14px;
+  background:radial-gradient(circle at 20px 0,#e5484d 19px,transparent 20px) 0 0/80px 14px,
+             radial-gradient(circle at 60px 0,#fff 19px,transparent 20px) 0 0/80px 14px;}
+.A .top{position:absolute;inset:12px 14px auto;display:flex;align-items:center;gap:10px;z-index:2;}
+.A .top .back{width:44px;height:44px;border-radius:50%;background:#fff;font-size:20px;box-shadow:0 3px 0 #b9343a;}
+.A .sign{flex:1;text-align:center;font-size:26px;color:#fff;
+  text-shadow:0 2px 0 #9b2c31,2px 0 0 #9b2c31,-2px 0 0 #9b2c31,0 -2px 0 #9b2c31;}
+.A .wallet{background:#fff;border-radius:22px;padding:8px 12px;font-size:18px;box-shadow:0 3px 0 #b9343a;}
+.A .show{flex:none;display:flex;align-items:flex-end;gap:10px;padding:26px 16px 0;height:220px;}
+.A .show .stage{flex:1;height:100%;display:flex;align-items:flex-end;justify-content:center;}
+.A .show .stage .th{width:170px;height:170px;}
+.A .ptag{position:relative;width:150px;margin-bottom:36px;background:#fff6d8;border-radius:6px 22px 22px 6px;
+  padding:12px 12px 12px 22px;box-shadow:0 4px 0 #c9a35e;transform:rotate(4deg);transform-origin:10px 50%;}
+.A .ptag::before{content:'';position:absolute;left:8px;top:50%;width:8px;height:8px;margin-top:-4px;border-radius:50%;background:#7cc7ff;box-shadow:inset 0 1px 2px rgba(0,0,0,.3);}
+.A .ptag .en{font-size:30px;line-height:1;color:#8a5a34;display:flex;align-items:center;gap:6px;}
+.A .ptag .en button{font-size:18px;}
+.A .ptag .ko{font-size:17px;margin:4px 0 8px;}
+.A .ptag .sz{font-size:14px;color:#6b5a3e;}
+.A .counter{flex:none;height:22px;background:#8a5a34;border-top:6px solid #b07b4a;margin:0 0 4px;}
+.A .shelves{flex:1;min-height:0;overflow-y:auto;background:#f4d9a8;padding:6px 10px 10px;}
+.A .shelves h3{font-size:17px;margin:10px 4px 0;color:#6b4423;}
+.A .shelf{display:grid;grid-template-columns:repeat(4,1fr);grid-auto-rows:128px;column-gap:6px;
+  background:repeating-linear-gradient(to bottom,transparent 0 78px,#a86f3d 78px 88px,rgba(107,68,35,.25) 88px 92px,transparent 92px 128px);}
+.A .it{position:relative;display:flex;flex-direction:column;align-items:center;}
+.A .it .pic{height:78px;width:70px;display:flex;align-items:flex-end;justify-content:center;}
+.A .it .pic .th{height:66px;}
+.A .it .tag{margin-top:12px;position:relative;font-size:14px;background:#fff;border-radius:8px;padding:3px 7px;white-space:nowrap;box-shadow:0 2px 0 #d6b98a;}
+.A .it .tag::before{content:'';position:absolute;left:50%;top:-12px;height:12px;border-left:2px solid #6b4423;}
+.A .it .nm{font-size:13px;margin-top:3px;color:#6b4423;}
+.A .it.own .tag{background:#3fae5a;color:#fff;box-shadow:0 2px 0 #2b7d3f;}
+.A .it.lock .pic{filter:grayscale(.9) brightness(1.1);opacity:.55;}
+.A .it.lock .tag{background:#e8e1d3;color:#6b5a3e;}
+.A .it.gift .tag{background:#ffe1f0;color:#b0306a;box-shadow:0 2px 0 #f4a8cb;}
+.A .it.sel .pic{animation:bob .9s ease-in-out infinite alternate;}
+.A .it.sel .tag{outline:3px solid #e5484d;}
+@keyframes bob{to{transform:translateY(-6px);}}
+.A .bar{flex:none;display:flex;gap:8px;padding:10px 12px 14px;background:#8a5a34;}
+.A .bar button{flex:1;border-radius:20px;padding:12px 8px;font-size:19px;}
+.A .bar .buy{flex:1.4;background:#e5484d;color:#fff;box-shadow:0 5px 0 #9b2c31;}
+.A .bar .buy:disabled{background:#c7b8a2;box-shadow:0 5px 0 #8f7f68;color:#fff;}
+.A .bar .go{background:#3fae5a;color:#fff;box-shadow:0 5px 0 #2b7d3f;}
+
+/* ===================== B. 마을 계획판 ===================== */
+.B{background:#2f5d3a;color:#f4f7ef;font-family:"Gaegu","Jua",sans-serif;font-weight:700;}
+.B .top{flex:none;display:flex;align-items:center;gap:10px;padding:14px 16px 6px;font-family:"Jua";}
+.B .top .back{width:42px;height:42px;border-radius:50%;background:#f4f7ef;color:#2f5d3a;font-size:20px;}
+.B .top h3{flex:1;margin:0;font-size:24px;font-weight:normal;}
+.B .top .wallet{font-size:18px;border:2px dashed rgba(244,247,239,.6);border-radius:20px;padding:6px 12px;}
+.B .plan{flex:none;display:flex;gap:14px;padding:8px 16px 14px;border-bottom:2px dashed rgba(244,247,239,.35);}
+.B .isl{flex:none;width:176px;height:176px;position:relative;}
+.B .isl svg{width:100%;height:100%;display:block;}
+.B .info{flex:1;min-width:0;display:flex;flex-direction:column;}
+.B .info .pic{height:70px;}
+.B .info .en{font-size:38px;line-height:.95;color:#ffd84d;display:flex;align-items:center;gap:6px;}
+.B .info .en button{font-size:20px;}
+.B .info .ko{font-size:22px;}
+.B .info .fit{font-size:18px;margin-top:auto;line-height:1.25;color:#c8e6c0;}
+.B .info .fit b{color:#ffd84d;}
+.B .filt{flex:none;display:flex;gap:6px;padding:10px 16px 4px;font-family:"Jua";}
+.B .filt button{border:2px solid rgba(244,247,239,.5);border-radius:16px;padding:4px 12px;font-size:16px;color:#f4f7ef;}
+.B .filt button.on{background:#f4f7ef;color:#2f5d3a;border-color:#f4f7ef;}
+.B .list{flex:1;min-height:0;overflow-y:auto;padding:0 10px;}
+.B .ln{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:6px 6px;border-bottom:1px solid rgba(244,247,239,.18);font-weight:700;}
+.B .ln .pic{flex:none;width:48px;height:48px;}
+.B .ln .nm{flex:1;min-width:0;font-size:21px;line-height:1.05;}
+.B .ln .nm small{display:block;font-size:17px;color:#c8e6c0;}
+.B .ln .fp{flex:none;display:grid;gap:2px;}
+.B .ln .fp i{display:block;width:6px;height:6px;background:#f4f7ef;opacity:.75;border-radius:1px;}
+.B .ln .pr{flex:none;width:84px;text-align:right;font-size:19px;}
+.B .ln.own .pr{color:#8fe39a;}
+.B .ln.lock{opacity:.55;}
+.B .ln.gift .pr{color:#ffb3d9;font-size:16px;}
+.B .ln.sel{background:rgba(255,216,77,.16);border-radius:12px;border-bottom-color:transparent;}
+.B .ln.sel .fp i{background:#ffd84d;opacity:1;}
+.B .bar{flex:none;padding:10px 14px 14px;font-family:"Jua";}
+.B .bar .buy{width:100%;border-radius:22px;padding:14px;font-size:21px;background:#ffd84d;color:#2f5d3a;box-shadow:0 5px 0 #c9a321;}
+.B .bar .buy:disabled{background:#5d7f63;color:#c8e6c0;box-shadow:0 5px 0 #23472c;}
+
+/* ===================== C. 스티커 도감 ===================== */
+.C{background:#f3ecff;}
+.C .top{flex:none;display:flex;align-items:center;gap:10px;padding:14px 16px 4px;}
+.C .top .back{width:42px;height:42px;border-radius:50%;background:#fff;font-size:20px;box-shadow:0 3px 0 #c4b5fd;}
+.C .top h3{flex:1;margin:0;font-size:24px;color:#5b21b6;font-weight:normal;}
+.C .top .wallet{background:#fff;border-radius:20px;padding:7px 12px;font-size:18px;box-shadow:0 3px 0 #c4b5fd;}
+.C .prog{flex:none;margin:6px 16px 0;display:flex;align-items:center;gap:10px;font-size:17px;color:#5b21b6;}
+.C .prog .tr{flex:1;height:14px;border-radius:7px;background:#ddd0fb;overflow:hidden;}
+.C .prog .tr i{display:block;height:100%;background:#ec4899;border-radius:7px;}
+.C .hero{flex:none;margin:12px 16px 6px;height:168px;border-radius:26px;background:#fff;display:flex;align-items:center;gap:6px;padding:10px 14px;position:relative;
+  box-shadow:0 4px 0 #ddd0fb;}
+.C .hero .pic{width:150px;height:150px;flex:none;}
+.C .hero .pic .th{filter:drop-shadow(3px 0 0 #fff) drop-shadow(-3px 0 0 #fff) drop-shadow(0 3px 0 #fff) drop-shadow(0 -3px 0 #fff) drop-shadow(0 4px 4px rgba(91,33,182,.25));}
+.C .hero .en{font-size:34px;line-height:1;color:#5b21b6;display:flex;align-items:center;gap:6px;}
+.C .hero .en button{font-size:20px;}
+.C .hero .ko{font-size:19px;margin:4px 0 10px;}
+.C .hero .st{font-size:16px;color:#64748b;line-height:1.35;}
+.C .book{flex:1;min-height:0;overflow-y:auto;margin:6px 10px 0;padding:12px 8px;border-radius:22px 22px 0 0;background:#fff;
+  background-image:radial-gradient(#ece4ff 1.5px,transparent 1.5px);background-size:16px 16px;}
+.C .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px 8px;}
+.C .slot{display:flex;flex-direction:column;align-items:center;gap:2px;}
+.C .slot .pic{width:76px;height:76px;border-radius:20px;border:3px dashed #d4c4fb;display:flex;align-items:center;justify-content:center;padding:6px;}
+.C .slot .pic .th{filter:grayscale(1) brightness(1.35) opacity(.55);}
+.C .slot .lb{font-size:14px;color:#5b21b6;white-space:nowrap;}
+.C .slot .lb.mut{color:#94a3b8;}
+.C .slot.own .pic{border-color:transparent;transform:rotate(var(--r,-3deg));}
+.C .slot.own .pic .th{filter:drop-shadow(2px 0 0 #fff) drop-shadow(-2px 0 0 #fff) drop-shadow(0 2px 0 #fff) drop-shadow(0 -2px 0 #fff) drop-shadow(0 3px 3px rgba(91,33,182,.3));}
+.C .slot.buy .pic .th{filter:grayscale(.15) opacity(.8);}
+.C .slot.gift .pic{border-color:#f9a8d4;background:#fff1f8;}
+.C .slot.sel .pic{border:3px solid #ec4899;border-radius:20px;}
+.C .bar{flex:none;display:flex;gap:8px;padding:10px 12px 14px;background:#fff;}
+.C .bar button{flex:1;border-radius:20px;padding:13px 8px;font-size:19px;}
+.C .bar .buy{flex:1.4;background:#8b5cf6;color:#fff;box-shadow:0 5px 0 #6d28d9;}
+.C .bar .buy:disabled{background:#d4c4fb;box-shadow:0 5px 0 #b9a5f0;}
+.C .bar .go{background:#fce7f3;color:#be185d;box-shadow:0 5px 0 #f9a8d4;}
+
+@media (prefers-reduced-motion:reduce){.A .it.sel .pic{animation:none;}}
+@media (max-width:440px){.frame{height:700px;}.A .shelf,.C .grid{grid-template-columns:repeat(3,1fr);}}
+</style>
+</head>
+<body>
+<div class="page">
+  <h1>마을 상점 시안 3가지</h1>
+  <p>지금 상태 그대로의 데이터예요. 코인 600, 오두막·나무 2·돌길 6 보유, 레벨 2. 장식을 누르면 위쪽 설명이 바뀌어요.</p>
+  <div class="row">
+    <div class="opt">
+      <h2>A. 장터 가판대</h2>
+      <p class="why">건물과 꾸미기를 선반 두 칸으로 나눠요. 값은 선반에 매단 가격표로 보여서 잠김·선물·보유가 한눈에 구분돼요.</p>
+      <div class="frame A" id="fa"></div>
+    </div>
+    <div class="opt">
+      <h2>B. 마을 계획판</h2>
+      <p class="why">고른 장식이 내 섬에서 땅을 얼마나 차지하는지 바로 보여 줘요. 사기 전에 "놓을 자리가 있나?"를 알 수 있어요.</p>
+      <div class="frame B" id="fb"></div>
+    </div>
+    <div class="opt">
+      <h2>C. 스티커 도감</h2>
+      <p class="why">모으는 재미에 집중해요. 가진 건 스티커로 붙고, 없는 건 빈칸으로 남아서 다음에 뭘 모을지 보여요.</p>
+      <div class="frame C" id="fc"></div>
+    </div>
+  </div>
+</div>
+
+<script src="../../village-items.js"></script>
+<script>
+// 시안용 가짜 상태 (실제 게임의 판단 규칙을 흉내 내요)
+const ST = {coins:600, level:2, trophies:0, dex:12, own:{cottage:1, tree:2, path:6}, placed:{cottage:16, tree:8, path:24}};
+const ITEMS = DECOR.filter(d => d.cur === 'eng');
+let thumbs = {};
+const sel = {A:'house', B:'house', C:'house'};
+const lockMet = u => !u || (u.level ? ST.level >= u.level : u.trophies ? ST.trophies >= u.trophies : true);
+const lockTxt = u => u.level ? `레벨 ${u.level}이면 열려요` : `트로피 ${u.trophies}개면 열려요`;
+const giftTxt = g => g.first ? '첫 방문 선물' : g.level ? `레벨 ${g.level} 선물` : g.trophies ? `트로피 ${g.trophies}개 선물` : g.dex ? `단어 ${g.dex}개 선물` : '선물';
+function state(d){
+  const n = ST.own[d.id] || 0;
+  if (n && !d.stack) return {k:'own', n};
+  if (d.price == null) return n ? {k:'own', n} : {k:'gift'};
+  if (!lockMet(d.unlock)) return n ? {k:'own', n} : {k:'lock'};
+  return {k: n ? 'own' : 'buy', n, more:true};
+}
+const pic = d => thumbs[d.id] ? `<img class="th" src="${thumbs[d.id]}" alt="">` : `<span class="th emo">${d.icon}</span>`;
+const say = w => { try { const u = new SpeechSynthesisUtterance(w); u.lang = 'en-US'; speechSynthesis.speak(u); } catch(e){} };
+function buyText(d){
+  const s = state(d);
+  if (d.price == null) return {t:`🎁 ${giftTxt(d.gift)}로 받아요`, off:true};
+  if (s.k === 'lock') return {t:`🔒 ${lockTxt(d.unlock)}`, off:true};
+  if (s.k === 'own' && !d.stack) return {t:'이미 있어요', off:true};
+  if (ST.coins < d.price) return {t:`코인이 ${d.price - ST.coins}개 더 필요해요`, off:true};
+  return {t:`🪙 ${d.price} 내고 사기`, off:false};
+}
+const statusLine = d => {
+  const s = state(d);
+  if (s.k === 'gift') return giftTxt(d.gift);
+  if (s.k === 'lock') return lockTxt(d.unlock);
+  if (s.k === 'own') return d.stack ? `${s.n}개 있어요 · 더 살 수 있어요` : '이미 가지고 있어요';
+  return '살 수 있어요';
+};
+
+/* ---------- A ---------- */
+function drawA(){
+  const d = DECOR.find(x => x.id === sel.A), b = buyText(d);
+  const tag = x => { const s = state(x);
+    if (s.k === 'gift') return ['gift', '🎁 선물'];
+    if (s.k === 'lock') return ['lock', x.unlock.level ? `🔒 Lv${x.unlock.level}` : `🔒 🏆${x.unlock.trophies}`];
+    if (s.k === 'own') return ['own', x.stack ? `${s.n}개 · 🪙${x.price}` : '내 거'];
+    return ['', `🪙 ${x.price}`]; };
+  const shelf = kind => ITEMS.filter(x => x.kind === kind).map(x => { const [c, t] = tag(x);
+    return `<button class="it ${c} ${x.id === sel.A ? 'sel' : ''}" data-id="${x.id}" aria-label="${x.name}"><span class="pic">${pic(x)}</span><span class="tag">${t}</span><span class="nm">${x.name}</span></button>`; }).join('');
+  fa.innerHTML = `<div class="awn"></div>
+    <div class="top"><button class="back" aria-label="뒤로">⬅️</button><div class="sign">마을 가게</div><div class="wallet">🪙 ${ST.coins}</div></div>
+    <div class="show"><div class="stage">${pic(d)}</div>
+      <div class="ptag"><div class="en">${d.word}<button aria-label="듣기">🔊</button></div><div class="ko">${d.name}</div><div class="sz">땅 ${d.w}×${d.d}칸<br>${statusLine(d)}</div></div></div>
+    <div class="counter"></div>
+    <div class="shelves"><h3>집과 건물</h3><div class="shelf">${shelf('building')}</div><h3>꾸미기</h3><div class="shelf">${shelf('decor')}</div></div>
+    <div class="bar"><button class="buy" ${b.off ? 'disabled' : ''}>${b.t}</button><button class="go">🏡 꾸미러 가기</button></div>`;
+  fa.querySelectorAll('.it').forEach(e => e.onclick = () => { const k = fa.querySelector('.shelves').scrollTop; sel.A = e.dataset.id; say(DECOR.find(x=>x.id===sel.A).word); drawA(); fa.querySelector('.shelves').scrollTop = k; });
+  fa.querySelector('.en button').onclick = () => say(d.word);
+}
+
+/* ---------- B ---------- */
+let bFilter = 'all';
+function island(d){
+  // 섬 = 반지름 6.2, 한 칸 0.5 → 지름 약 25칸. 그림에서는 13×13 큰 칸(=2×2 작은 칸)으로 줄여 그려요
+  const N = 13, C = 176 / N, r = 6.2;
+  let cells = '', free = 0;
+  const used = new Set(['5,5','5,6','6,5','6,6','8,4','3,8','4,8','7,8','8,8','9,8']);
+  for (let i = 0; i < N; i++) for (let j = 0; j < N; j++){
+    const x = (i + .5 - N/2), z = (j + .5 - N/2);
+    if (Math.hypot(x, z) > r) continue;
+    const u = used.has(i+','+j);
+    if (!u) free++;
+    cells += `<rect x="${i*C+1}" y="${j*C+1}" width="${C-2}" height="${C-2}" rx="2" fill="${u ? 'rgba(244,247,239,.55)' : 'rgba(244,247,239,.1)'}"/>`;
+  }
+  const fw = Math.max(1, Math.ceil(d.w / 2)), fd = Math.max(1, Math.ceil(d.d / 2)), fx = 9 - Math.floor(fw/2), fz = 3;
+  const foot = `<rect x="${fx*C}" y="${fz*C}" width="${fw*C}" height="${fd*C}" rx="4" fill="rgba(255,216,77,.55)" stroke="#ffd84d" stroke-width="2.5" stroke-dasharray="5 3"/>`;
+  return {svg:`<svg viewBox="0 0 176 176" aria-label="내 섬 지도"><circle cx="88" cy="88" r="${6.2/ (N/2) * 88 + 4}" fill="rgba(108,194,74,.25)"/>${cells}${foot}</svg>`, free: free * 4};
+}
+function drawB(){
+  const d = DECOR.find(x => x.id === sel.B), b = buyText(d), isl = island(d);
+  const fp = x => `<span class="fp" style="grid-template-columns:repeat(${x.w},6px)" aria-hidden="true">${'<i></i>'.repeat(x.w * x.d)}</span>`;
+  const list = ITEMS.filter(x => bFilter === 'all' || x.kind === bFilter);
+  const pr = x => { const s = state(x);
+    if (s.k === 'gift') return giftTxt(x.gift).replace(' 선물','');
+    if (s.k === 'lock') return '🔒';
+    if (s.k === 'own') return x.stack ? `${s.n}개 있음` : '있음';
+    return `🪙${x.price}`; };
+  fb.innerHTML = `<div class="top"><button class="back" aria-label="뒤로">⬅️</button><h3>마을 계획판</h3><div class="wallet">🪙 ${ST.coins}</div></div>
+    <div class="plan"><div class="isl">${isl.svg}</div>
+      <div class="info"><div class="pic">${pic(d)}</div><div class="en">${d.word}<button aria-label="듣기">🔊</button></div><div class="ko">${d.name}</div>
+      <div class="fit">노란 자리만큼 <b>${d.w}×${d.d}칸</b> 차지해요<br>내 섬 빈 땅 ${isl.free}칸</div></div></div>
+    <div class="filt">${[['all','전부'],['building','건물'],['decor','꾸미기']].map(([k,t]) => `<button class="${bFilter===k?'on':''}" data-f="${k}">${t}</button>`).join('')}</div>
+    <div class="list">${list.map(x => `<button class="ln ${state(x).k} ${x.id===sel.B?'sel':''}" data-id="${x.id}"><span class="pic">${pic(x)}</span><span class="nm">${x.name}<small>${x.word}</small></span>${fp(x)}<span class="pr">${pr(x)}</span></button>`).join('')}</div>
+    <div class="bar"><button class="buy" ${b.off ? 'disabled' : ''}>${b.t}</button></div>`;
+  fb.querySelectorAll('.ln').forEach(e => e.onclick = () => { const k = fb.querySelector('.list').scrollTop; sel.B = e.dataset.id; say(DECOR.find(x=>x.id===sel.B).word); drawB(); fb.querySelector('.list').scrollTop = k; });
+  fb.querySelectorAll('.filt button').forEach(e => e.onclick = () => { bFilter = e.dataset.f; drawB(); });
+  fb.querySelector('.en button').onclick = () => say(d.word);
+}
+
+/* ---------- C ---------- */
+function drawC(){
+  const d = DECOR.find(x => x.id === sel.C), b = buyText(d);
+  const have = ITEMS.filter(x => ST.own[x.id]).length;
+  const lb = x => { const s = state(x);
+    if (s.k === 'own') return [`${x.name}${x.stack ? ' ×' + s.n : ''}`, ''];
+    if (s.k === 'gift') return ['🎁 ' + giftTxt(x.gift).replace(' 선물',''), 'mut'];
+    if (s.k === 'lock') return [x.unlock.level ? `🔒 레벨 ${x.unlock.level}` : `🔒 트로피 ${x.unlock.trophies}`, 'mut'];
+    return [`🪙 ${x.price}`, '']; };
+  const rot = ['-4deg','3deg','-2deg','4deg','-3deg','2deg'];
+  fc.innerHTML = `<div class="top"><button class="back" aria-label="뒤로">⬅️</button><h3>마을 스티커</h3><div class="wallet">🪙 ${ST.coins}</div></div>
+    <div class="prog"><span>${have} / ${ITEMS.length} 모았어요</span><span class="tr"><i style="width:${have/ITEMS.length*100}%"></i></span></div>
+    <div class="hero"><div class="pic">${pic(d)}</div><div><div class="en">${d.word}<button aria-label="듣기">🔊</button></div><div class="ko">${d.name}</div><div class="st">${statusLine(d)}<br>땅 ${d.w}×${d.d}칸</div></div></div>
+    <div class="book"><div class="grid">${ITEMS.map((x,i) => { const [t, m] = lb(x);
+      return `<button class="slot ${state(x).k} ${x.id===sel.C?'sel':''}" data-id="${x.id}" style="--r:${rot[i%6]}"><span class="pic">${pic(x)}</span><span class="lb ${m}">${t}</span></button>`; }).join('')}</div></div>
+    <div class="bar"><button class="buy" ${b.off ? 'disabled' : ''}>${b.t}</button><button class="go">🏡 꾸미러 가기</button></div>`;
+  fc.querySelectorAll('.slot').forEach(e => e.onclick = () => { const k = fc.querySelector('.book').scrollTop; sel.C = e.dataset.id; say(DECOR.find(x=>x.id===sel.C).word); drawC(); fc.querySelector('.book').scrollTop = k; });
+  fc.querySelector('.en button').onclick = () => say(d.word);
+}
+
+const fa = document.getElementById('fa'), fb = document.getElementById('fb'), fc = document.getElementById('fc');
+function all(){ drawA(); drawB(); drawC(); }
+all();
+// 진짜 3D 썸네일로 바꿔요 (못 불러오면 이모지 그대로)
+import('../../village-3d.js').then(m => m.thumbs(ITEMS.map(d => d.id))).then(t => { thumbs = t; all(); }).catch(e => console.warn('3D 썸네일 실패', e));
+</script>
+</body>
+</html>
