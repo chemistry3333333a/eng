@@ -494,8 +494,14 @@ const level = () => Math.floor(S.xp / 100) + 1;
 const wstat = w => S.words[w] || (S.words[w] = {seen:0, c:0, wrong:0});
 const mastery = st => !st || st.seen === 0 ? 0 : st.c >= 6 ? 3 : st.c >= 3 ? 2 : 1;
 const MEDAL = ['', '🥉', '🥈', '🥇'];
-// 앞 단원을 깼거나, 이미 해 본 적이 있는 단원이면 열려 있어요
-const unlocked = id => { const i = stageIdx(id); return i === 0 || !!S.settings.openAll || !!S.stages[id] || !!(S.stages[STAGES[i-1].id] && S.stages[STAGES[i-1].id].stars > 0); };
+// 보통 단원은 언제나 골라서 풀 수 있어요.
+// 보스는 그 장의 단원을 모두 깨야 열려요 (한 번 도전했거나 "모두 열기"면 열림)
+const unlocked = id => {
+  const st = STAGES[stageIdx(id)];
+  if (!st) return false;
+  if (!st.boss || S.settings.openAll || S.stages[id]) return true;
+  return STAGES.every(x => x.ch !== st.ch || x.boss || (S.stages[x.id] && S.stages[x.id].stars > 0));
+};
 
 /* ================== 소리 ================== */
 let voice = null;
@@ -702,9 +708,9 @@ function renderMap(){
     b.innerHTML = `<div class="em">${open ? st.icon : '🔒'}</div><div class="nm">${st.boss ? 'BOSS' : num + '.'} ${st.name}</div>
       <div class="st">${'⭐'.repeat(stars)}${'☆'.repeat(3-stars)}</div>
       ${S.session && S.session.stage === st.id ? '<div class="badge">하던 중</div>' : ''}
-      ${open && !rec ? '<div class="badge" style="background:#22c55e">NEW</div>' : ''}`;
+      ${b === current ? '<div class="badge" style="background:#22c55e">NEW</div>' : ''}`;
     b.onclick = () => {
-      if (!open){ toast('앞 스테이지를 먼저 깨 주세요! 🔒'); return; }
+      if (!open){ toast('이 장의 스테이지를 모두 깨면 보스가 나와요! 🔒'); return; }
       if (S.session && S.session.stage === st.id) resumeGame(); else startStage(st.id);
     };
     list.appendChild(b);

@@ -143,7 +143,7 @@ $('mSetBtn').onclick = () => $('setBtn').click();
 
 // 스테이지 버튼: 하던 판이면 이어서, 아니면 새로 시작
 function onStage(id, open){
-  if (!open){ toast('앞 스테이지를 먼저 깨 주세요! 🔒'); return; }
+  if (!open){ toast('이 장의 스테이지를 모두 깨면 보스가 나와요! 🔒'); return; }
   if (S.math.session && S.math.session.stage === id) resume(); else start(id);
 }
 
@@ -175,7 +175,7 @@ function map(){
     b.innerHTML = `<div class="em">${open ? s.icon : '🔒'}</div><div class="nm">${s.boss ? 'BOSS' : num + '.'} ${s.name}</div>
       <div class="st">${'⭐'.repeat(stars)}${'☆'.repeat(3 - stars)}</div>
       ${S.math.session && S.math.session.stage === s.id ? '<div class="badge">하던 중</div>' : ''}
-      ${open && !rec ? '<div class="badge" style="background:#22c55e">NEW</div>' : ''}`;
+      ${b === current ? '<div class="badge" style="background:#22c55e">NEW</div>' : ''}`;
     b.onclick = () => onStage(s.id, open);
     list.appendChild(b);
   });
