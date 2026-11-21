@@ -1,7 +1,7 @@
 /* =====================================================================
    워드 아일랜드 · 문장 라운드 (영어 단원 8단어를 다 잡은 뒤 이어서 해요)
    - section#sgame 을 스스로 주입해요 (math-game.js · boss.js 와 같은 방식)
-   - 문제 종류: listen(듣고 고르기) · order(블록 줄 세우기)
+   - 문제 종류: listen(듣고 뜻 고르기) · blank(듣고 빈칸 채우기) · order(블록 줄 세우기)
    - 진행은 S.session.sent 에 저장해요. 점수·코인·콤보는 S.session 에 더해서 결과 화면에서 단어와 합쳐 보여 줘요
    - 처음 틀린 문제는 라운드 끝에 한 번 더 나와요. 별 계산에는 처음 6문제의 "한 번에 맞힘"만 들어가요
    ===================================================================== */
@@ -19,6 +19,15 @@ const css = `
 #sgame .scard.wrong{animation:shake .5s;}
 #sgame .scard.out{opacity:.3;pointer-events:none;}
 #sgame .scard.right{box-shadow:0 0 0 7px var(--good),0 7px 0 rgba(0,0,0,.13);}
+#sgame .sblank{display:inline-block;min-width:3.2em;border-bottom:4px solid #60a5fa;color:#1d4ed8;padding:0 6px;margin:0 2px;}
+#sgame .sblank.fill{border-bottom-color:var(--good);color:#15803d;animation:pop .35s;}
+#sgame .swords{flex:1;display:flex;flex-wrap:wrap;gap:14px;align-content:center;justify-content:center;}
+#sgame .sword{border:0;background:#fff;color:#1d4ed8;border-radius:20px;min-width:min(40vw,170px);padding:16px 22px;
+  font-size:clamp(24px,5.5vw,34px);font-family:system-ui,sans-serif;font-weight:700;box-shadow:0 7px 0 #93c5fd;animation:pop .35s backwards;}
+#sgame .sword:active{transform:translateY(4px);box-shadow:0 3px 0 #93c5fd;}
+#sgame .sword.wrong{animation:shake .5s;}
+#sgame .sword.out{opacity:.3;pointer-events:none;}
+#sgame .sword.right{box-shadow:0 0 0 7px var(--good),0 7px 0 #93c5fd;}
 #sgame .sorder{flex:1;display:flex;flex-direction:column;gap:22px;align-items:center;justify-content:center;}
 #sgame .sline{min-height:84px;width:min(94vw,640px);background:#ffffffaa;border:4px dashed #fff;border-radius:22px;padding:10px;
   display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:center;transition:.15s;}
@@ -38,6 +47,28 @@ const css = `
 #sgame .sintro div{background:#fff;border-radius:30px;padding:26px 34px;text-align:center;font-size:40px;animation:pop .45s;box-shadow:0 10px 0 rgba(0,0,0,.12);}
 #sgame .sintro small{display:block;font-size:20px;color:var(--muted);margin-top:8px;}
 #avPalS{position:absolute;left:14px;bottom:14px;z-index:5;pointer-events:none;}
+@media (orientation:landscape) and (max-height:560px){   /* 폰 가로: 높이가 낮아서 모두 작고 촘촘하게 */
+  #sgame{gap:4px;padding-top:max(8px,env(safe-area-inset-top));padding-bottom:max(8px,env(safe-area-inset-bottom));overflow-y:auto;}
+  #sgame .topbar .icon{width:46px;height:46px;font-size:24px;}
+  #sgame .score{font-size:20px;padding:5px 12px;}
+  #sgame .skind{font-size:16px;}
+  #sgame .listen{margin-top:0;gap:12px;}
+  #sgame .speaker{width:54px;height:54px;font-size:28px;}
+  #sgame .slow{width:42px;height:42px;font-size:22px;}
+  #sgame .sq{padding:4px 18px;font-size:clamp(20px,3.6vw,28px);line-height:1.35;}
+  #sgame .sko{font-size:16px;}
+  #sgame .status{min-height:30px;font-size:20px;}
+  #sgame .scards{flex-direction:row;flex-wrap:wrap;gap:10px;align-content:center;}
+  #sgame .scard{width:min(30vw,280px);padding:10px 12px;font-size:clamp(17px,2.6vw,22px);}
+  #sgame .swords{gap:12px;}
+  #sgame .sword{min-width:120px;padding:8px 18px;font-size:24px;}
+  #sgame .sorder{gap:10px;}
+  #sgame .sline{min-height:58px;padding:6px;gap:8px;}
+  #sgame .sline .hintx{font-size:16px;}
+  #sgame .spool{min-height:48px;gap:10px;}
+  .sblk{padding:7px 14px;font-size:22px;}
+  #avPalS{display:none;}
+}
 `;
 const st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
 
@@ -61,7 +92,7 @@ sg.innerHTML = `<div id="avPalS"></div>
 document.body.appendChild(sg);
 
 const C = SentenceCore;
-const KIND = {listen:'👂 잘 듣고 맞는 뜻을 골라요', order:'🧱 블록을 순서대로 놓아 문장을 만들어요'};
+const KIND = {listen:'👂 잘 듣고 맞는 뜻을 골라요', blank:'✏️ 잘 듣고 빈칸에 들어갈 단어를 골라요', order:'🧱 블록을 순서대로 놓아 문장을 만들어요'};
 let R = null;   // 지금 문제 상태 (저장 안 함)
 
 const ses = () => S.session;
@@ -104,8 +135,9 @@ function next(){
   $('sKind').textContent = KIND[q.t];
   $('sStatus').innerHTML = '';
   $('sBody').innerHTML = '';
-  $('sListen').style.display = q.t === 'listen' ? '' : 'none';
+  $('sListen').style.display = q.t === 'order' ? 'none' : '';
   if (q.t === 'listen') listen();
+  else if (q.t === 'blank') blank();
   else order();
 }
 
@@ -167,6 +199,37 @@ function listen(){
   $('sBody').appendChild(box);
   setTimeout(() => { if (R === r) say(); }, 450);
 }
+
+/* ---------- 듣고 빈칸 채우기 ---------- */
+function blank(){
+  const r = R, b = C.blank(r.s);
+  $('sQ').innerHTML = `${esc(b.pre)}<span class="sblank" id="sGap">&nbsp;</span>${esc(b.post)}<div class="sko" id="sKo" style="display:none">${r.s.ko}</div>`;
+  const box = document.createElement('div'); box.className = 'swords';
+  C.blankOpts(ses().stage, r.s.w, 3).forEach((w, i) => {
+    const c = document.createElement('button');
+    c.className = 'sword'; c.style.animationDelay = (i*0.1)+'s';
+    c.textContent = w;
+    c.onclick = () => {
+      if (R !== r || r.locked) return;
+      if (w === r.s.w){
+        c.classList.add('right');
+        const gap = $('sGap'); gap.textContent = b.word; gap.classList.add('fill');
+        right(c);
+      } else {
+        wrong();
+        c.classList.remove('wrong'); void c.offsetWidth; c.classList.add('wrong');
+        setTimeout(() => c.classList.add('out'), 450);
+        $('sStatus').innerHTML = '<span>다시 들어 봐요 👂</span>';
+        $('sKo').style.display = '';   // 틀리면 뜻을 보여 줘요
+        setTimeout(() => { if (R === r && !r.locked) say(); }, 500);
+      }
+    };
+    box.appendChild(c);
+  });
+  $('sBody').appendChild(box);
+  setTimeout(() => { if (R === r) say(); }, 450);
+}
+const esc = t => t.replace(/&/g, '&amp;').replace(/</g, '&lt;');
 
 /* ---------- 블록 줄 세우기 ---------- */
 function order(){
