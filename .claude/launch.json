@@ -4,8 +4,28 @@
     {
       "name": "word-island",
       "runtimeExecutable": "npx",
-      "runtimeArgs": ["-y", "http-server@14.1.1", ".", "-p", "8080", "-c-1"],
+      "runtimeArgs": [
+        "-y",
+        "http-server@14.1.1",
+        ".",
+        "-p",
+        "8080",
+        "-c-1"
+      ],
       "port": 8080
+    },
+    {
+      "name": "word-island-8081",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "-y",
+        "http-server@14.1.1",
+        ".",
+        "-p",
+        "8081",
+        "-c-1"
+      ],
+      "port": 8081
     }
   ]
 }
