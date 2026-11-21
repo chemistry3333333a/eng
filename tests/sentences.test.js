@@ -22,11 +22,14 @@ for (const id of Object.keys(STAGE_SENTENCES)) {
       assert.match(s.en, C.wordRe(s.w), `${s.en} has "${s.w}"`);
       assert.ok(s.en.startsWith(s.blocks.join(' ')), `${s.en} blocks`);
       assert.match(C.end(s), /^[.!?]$/, `${s.en} ends with . ! ?`);
-      assert.ok(s.blocks.length >= 3, `${s.en} has 3+ blocks`);
+      assert.ok(s.blocks.length >= 3 && s.blocks.length <= 6, `${s.en} has 3~6 blocks`);
+      assert.ok(s.en.split(' ').length <= 9, `${s.en} is short (9 words or less)`);
       assert.equal(new Set(s.blocks).size, s.blocks.length, `${s.en} blocks are different`);
       assert.ok(s.ko.length > 0);
       // 빈칸 보기가 헷갈리지 않게: 같은 단원의 다른 단어는 문장에 없어요
-      for (const o of words) if (o !== s.w) assert.doesNotMatch(s.en, C.wordRe(o), `${s.en} has other word "${o}"`);
+      // 자기 단어 안에 든 말은 괜찮아요 (in front of 안의 in)
+      const rest = s.en.replace(C.wordRe(s.w), ' # ');
+      for (const o of words) if (o !== s.w) assert.doesNotMatch(rest, C.wordRe(o), `${s.en} has other word "${o}"`);
     }
   });
 
@@ -36,13 +39,17 @@ for (const id of Object.keys(STAGE_SENTENCES)) {
   });
 }
 
-test('chapter 1 and 2 stages have a sentence round, bosses and later chapters do not', () => {
-  for (const ci of [0, 1]) {
-    for (const id of CHAPTERS[ci].stages) assert.ok(C.has(id), `stage ${id}`);
-    assert.ok(!C.has(CHAPTERS[ci].boss.id));
-  }
-  assert.ok(!C.has(CHAPTERS[2].stages[0]));
+test('every word stage in every chapter has a sentence round, bosses do not', () => {
+  CHAPTERS.forEach((ch, ci) => {
+    for (const id of ch.stages) assert.ok(C.has(id), `${ci + 1}장 stage ${id}`);
+    assert.ok(!C.has(ch.boss.id), `${ci + 1}장 boss`);
+  });
   assert.ok(!C.has('review'));
+});
+
+test('sentences exist only for stages that are on the map', () => {
+  const onMap = new Set(CHAPTERS.flatMap(ch => ch.stages).map(String));
+  for (const id of Object.keys(STAGE_SENTENCES)) assert.ok(onMap.has(id), `stage ${id}`);
 });
 
 test('plan: 6 different words, 2 listen → 2 blank → 2 order', () => {
@@ -86,6 +93,14 @@ test('blank options: answer + other words of the stage, no repeats', () => {
       assert.equal(new Set(o).size, 3);
       assert.ok(o.every(x => words.includes(x)));
     }
+  }
+});
+
+test('blank options never put a word next to a phrase that holds it (in ↔ in front of)', () => {
+  for (let i = 0; i < 200; i++) {
+    assert.ok(!J(C.blankOpts(45, 'in front of', 3)).includes('in'));
+    assert.ok(!J(C.blankOpts(45, 'in', 3)).includes('in front of'));
+    assert.ok(!J(C.blankOpts(65, 'table tennis', 3)).includes('tennis'));
   }
 });
 
