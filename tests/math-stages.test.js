@@ -2,27 +2,29 @@ const test = require('node:test'), assert = require('node:assert/strict');
 const {load} = require('./load');
 const vm = require('vm');
 
-const ctx = load(['math-core.js', 'math-stages.js']);
+const ctx = load(['math-core.js', 'math-more.js', 'math-stages.js']);
 const M = ctx.MathCore, MS = ctx.MathStages;
 const MATH_STAGES = vm.runInContext('MATH_STAGES', ctx);
 const MATH_CHAPTERS = vm.runInContext('MATH_CHAPTERS', ctx);
 const MATH_BOSS = vm.runInContext('MATH_BOSS', ctx);
 const J = v => JSON.parse(JSON.stringify(v));   // vm 안 객체는 prototype 이 달라서 deepEqual 전에 옮겨요
-const plain = MATH_STAGES.filter(s => !s.boss);
+// 4-2 분수·소수 덧셈·뺄셈 (처음부터 있던 12개). 5~6학년 스테이지는 math-more.test.js 에서 봐요
+const OLD = MATH_STAGES.slice(0, 12);
+const plain = OLD.filter(s => !s.boss);
 const calc = p => p.op === '+' ? M.add(p.a, p.b) : M.sub(p.a, p.b);
 const isFrac = v => v.t === 'f';
 const tot = v => v.w * v.d + v.n;
 
-test('stage table has 2 chapters x (5 stages + boss)', () => {
-  assert.equal(MATH_CHAPTERS.length, 2);
+test('the first 2 chapters (5 stages + boss) keep their ids and order', () => {
+  assert.ok(MATH_CHAPTERS.length > 2);
   assert.deepEqual(J(MATH_CHAPTERS[0].stages), ['m-fr1', 'm-fr2', 'm-fr3', 'm-fr4', 'm-fr5']);
   assert.deepEqual(J(MATH_CHAPTERS[1].stages), ['m-de1', 'm-de2', 'm-de3', 'm-de4', 'm-de5']);
   assert.equal(MATH_CHAPTERS[0].boss.id, 'm-frB');
   assert.equal(MATH_CHAPTERS[1].boss.id, 'm-deB');
-  assert.deepEqual(J(MATH_STAGES.map(s => s.id)), [
+  assert.deepEqual(J(OLD.map(s => s.id)), [
     'm-fr1', 'm-fr2', 'm-fr3', 'm-fr4', 'm-fr5', 'm-frB',
     'm-de1', 'm-de2', 'm-de3', 'm-de4', 'm-de5', 'm-deB']);
-  assert.deepEqual(J(MATH_STAGES.filter(s => s.boss).map(s => s.id)), ['m-frB', 'm-deB']);
+  assert.deepEqual(J(OLD.filter(s => s.boss).map(s => s.id)), ['m-frB', 'm-deB']);
 });
 
 test('every stage generates correct, in-range problems (500 each)', () => {
@@ -126,7 +128,7 @@ test('options are value-distinct and contain the answer once', () => {
 
 test('buildQueue: 10 for stages, 12 for bosses, no duplicates, JSON-serializable', () => {
   const key = p => M.text(p.a) + p.op + M.text(p.b);
-  for (const st of MATH_STAGES) for (let i = 0; i < 40; i++) {
+  for (const st of OLD) for (let i = 0; i < 40; i++) {
     const q = MS.buildQueue(st.id);
     assert.equal(q.length, st.boss ? 12 : 10, st.id);
     assert.equal(JSON.stringify(JSON.parse(JSON.stringify(q))), JSON.stringify(q));   // 저장했다 읽어도 그대로 (vm 객체라 deepEqual 은 못 써요)
@@ -185,7 +187,7 @@ test('unlocked follows the English rule', () => {
 });
 
 test('boss skills are visual only', () => {
-  assert.deepEqual(J(Object.keys(MATH_BOSS).sort()), ['m-deB', 'm-frB']);
+  assert.deepEqual(J(Object.keys(MATH_BOSS).sort()), J(MATH_STAGES.filter(s => s.boss).map(s => s.id).sort()));
   Object.values(MATH_BOSS).forEach(b => {
     assert.ok(['web', 'ice', 'ghost', 'swap', 'shadow', 'timer'].includes(b.skill));
     assert.equal(typeof b.tip, 'string');

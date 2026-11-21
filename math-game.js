@@ -144,7 +144,7 @@ function map(){
     if (i === 0 || MATH_STAGES[i-1].ch !== s.ch){
       const c = MATH_CHAPTERS[s.ch], h = document.createElement('div');
       h.className = 'chhead';
-      h.innerHTML = `${c.icon} ${s.ch + 1}장 · ${c.name} <small>4-2</small>`;
+      h.innerHTML = `${c.icon} ${s.ch + 1}장 · ${c.name} <small>${c.g || '4-2'}</small>`;
       list.appendChild(h);
     }
     if (!s.boss) num++;
@@ -174,7 +174,7 @@ const nextOf = id => MATH_STAGES[MATH_STAGES.findIndex(s => s.id === id) + 1] ||
 const isBoss = id => !!(stageOf(id) && stageOf(id).boss);
 const bossNow = () => !!(window.Boss && S.math.session && isBoss(S.math.session.stage));
 const optCount = id => MATH_STAGES.findIndex(s => s.id === id) < 2 ? 3 : 4;   // 1~2번 스테이지는 3마리
-const ansHtml = p => MathCore.problemHtml(p).replace(/= \?$/, `= <b>${MathCore.html(p.ans)}</b>`);
+const ansHtml = p => MathCore.answerHtml(p);
 const skill = k => { const m = S.math.skills; return m[k] || (m[k] = {c:0, wrong:0}); };
 
 let Q = null;          // 지금 문제 {p, opts, tries, afterHint, glow, locked, t0, wrong}
