@@ -14,6 +14,41 @@ const css = `
 .mx{display:inline-flex;align-items:center;vertical-align:middle;}
 .mx>.mf{font-size:.78em;margin-left:.08em;}
 .hl{background:#fff1a8;border-radius:8px;padding:0 4px;}
+.mu{font-size:.62em;margin-left:.06em;}
+.mqs{display:block;font-size:max(17px,.42em);font-weight:700;color:#475569;line-height:1.5;margin-bottom:2px;}
+.mtb{border-collapse:collapse;margin:0 auto;font-size:.62em;line-height:1.3;}
+.mtb th,.mtb td{border:2px solid #cbd5e1;padding:2px 12px;text-align:center;}
+.mtb th{background:#eef2f6;}
+/* 도형·그래프 그림 (math-fig.js). 흰 카드 위에서 읽히는 고정 색 */
+.mfig{display:block;width:auto;height:auto;max-width:100%;max-height:min(26vh,200px);margin:0 auto;font-family:inherit;overflow:visible;}
+.mfig text{font-size:15px;font-weight:700;fill:#1e293b;text-anchor:middle;dominant-baseline:central;paint-order:stroke;stroke:#fff;stroke-width:4px;stroke-linejoin:round;}
+.mfig text.sm{font-size:13px;fill:#475569;}
+.mfig text.nm{font-size:21px;fill:#2f80ed;}
+.mfig text.q{fill:#ea7a1a;font-size:20px;}
+.mfig .sh{fill:#dbeafe;stroke:#334155;stroke-width:2.5;stroke-linejoin:round;}
+.mfig .fc{fill:#dbeafe;stroke:#334155;stroke-width:2.5;stroke-linejoin:round;}
+.mfig .fc.t{fill:#eff6ff;} .mfig .fc.r{fill:#bfdbfe;}
+.mfig .hl{fill:#fde68a;stroke:#334155;stroke-width:2.5;}
+.mfig .ln{fill:none;stroke:#334155;stroke-width:2.5;stroke-linejoin:round;stroke-linecap:round;}
+.mfig .ln.thin{stroke-width:1.6;}
+.mfig .ln.o{stroke:#ea7a1a;stroke-width:3.5;}
+.mfig .dz{stroke-dasharray:6 5;}
+.mfig .gd{stroke:#e2e8f0;stroke-width:1.2;}
+.mfig .tk{stroke:#334155;stroke-width:2;}
+.mfig .arc{fill:none;stroke:#2f80ed;stroke-width:2;}
+.mfig .dt{fill:#334155;} .mfig .dt.o{fill:#ea7a1a;}
+.mfig .bx{stroke:#fff;stroke-width:2;}
+.mfig .bx0{fill:#f8fafc;stroke:#cbd5e1;stroke-width:1.5;}
+.mfig .cu{stroke:#1e3a8a;stroke-width:1.4;stroke-linejoin:round;}
+.mfig .cu.t{fill:#fde68a;} .mfig .cu.l{fill:#fbbf24;} .mfig .cu.r{fill:#f59e0b;}
+.mqrow{display:flex;flex-direction:column;align-items:center;gap:2px;}
+.mqrow .mfig{max-width:min(100%,360px);}
+.mh-figbox{flex:1;min-width:240px;}
+.mh-figbox .mfig{max-height:min(30vh,220px);}
+.mh-memo{flex:1;min-width:260px;text-align:left;}
+.mh-lines>div{font-size:20px;font-weight:800;line-height:1.9;padding:2px 4px;border-bottom:1px dashed #cbd5e1;}
+.mh-lines>div.mh-pop{animation:mhPop .5s;}
+.mh-lines .mtb{font-size:.9em;margin:4px 0;}
 .cg{color:#16a34a;} .co{color:#ea7a1a;} .cb{color:#2f80ed;} .cr{color:#e03131;}
 
 .mh-root{position:relative;overflow:hidden;box-sizing:border-box;width:100%;max-width:900px;margin:0 auto;padding:16px;
@@ -116,8 +151,8 @@ const st = document.createElement('style'); st.textContent = css; document.head.
 const MINUS = '−';
 const H = (v, c) => MathCore.html(v, c);
 const isD = v => v.t === 'd';
-// 받침 (MathCore 와 같은 규칙: 마지막으로 읽는 숫자)
-const bat = v => { const s = !isD(v) && v.n ? String(v.n) : MathCore.text(v); return '013678'.includes(s[s.length - 1]); };
+// 받침 (MathCore 와 같은 규칙: 마지막으로 읽는 숫자, 단위)
+const bat = v => MathCore.bat(v);
 const jo = (v, a, b) => bat(v) ? a : b;
 const snd = (f, d, ty) => { if (typeof tone === 'function') tone(f, d || .15, ty || 'triangle'); };
 const good = () => { if (typeof sfxGood === 'function') sfxGood(); };
@@ -126,7 +161,7 @@ const win = () => { if (typeof sfxWin === 'function') sfxWin(); };
 function plain(h){
   return String(h)
     .replace(/<span class="mf"><span>(\d+)<\/span><span class="md">(\d+)<\/span><\/span>/g, ' $2분의 $1')
-    .replace(/<br\s*\/?>/g, ' ').replace(/<[^>]+>/g, '').replace(/−/g, '빼기').replace(/\+/g, '더하기')
+    .replace(/<br\s*\/?>/g, ' ').replace(/<[^>]+>/g, '').replace(/−/g, '빼기').replace(/\+/g, '더하기').replace(/×/g, '곱하기').replace(/÷/g, '나누기')
     .replace(/\s+/g, ' ').trim();
 }
 const say = h => { try { if (window.MathGame && typeof MathGame.say === 'function') MathGame.say(plain(h)); } catch(e){} };
@@ -219,6 +254,7 @@ function ask(container, o = {}){
 
 // ── 비밀 규칙 한 줄 ──
 function tip(pl, p){
+  if (pl.ext) return pl.tip;
   const f = !isD(p.a), d = f ? p.a.d : 0;
   const W = pl.whole, Lc = W ? pl.afterWhole : pl.L, Rr = W ? MathCore.sub(pl.R, W) : pl.R;
   const w0 = W ? `⓪ 자연수 먼저: ${H(pl.L)} ${MINUS} ${H(W)} = ${H(Lc)} ` : '';
@@ -242,6 +278,7 @@ function tip(pl, p){
 
 // ── 아이가 고른 오답이 왜 틀렸나 (MathCore 오답 규칙과 같은 식) ──
 function why(p, w){
+  if (p.x) return MathMore.why(p, w);
   const M = MathCore, {a, b, op, ans} = p, is = x => !!x && M.same(w, x);
   // 받아올림/받아내림이 있는 문제에서만 그 실수라고 말해요 (0.3 + 0.4 의 0.6 은 그냥 "0.1 작아요")
   const kind = M.hintPlan(p).kind, carry = kind === 'make', borrow = kind === 'down' || kind === 'break';
@@ -290,9 +327,60 @@ function why(p, w){
   return pre + '정답과 달라요. 블록으로 하나씩 세어 보면 알 수 있어요!';
 }
 
+// ── 5~6학년 힌트: 풀이 노트 ── 단계마다 보기 3개, 맞히면 노트에 한 줄씩 적혀요 (블록·끌기 없음)
+function runNote(container, p, plan, wrongPick, onDone){
+  const steps = plan.steps, QS = MathMore.QS, root = mount(container);
+  root.innerHTML = `<div class="mh-eq"></div><div class="mh-steps"></div>
+    <div class="mh-owl"><div class="mh-who">🦉</div><div class="mh-bub"></div></div>
+    <div class="mh-bench">${MathMore.figOf(p) ? `<div class="mh-box mh-figbox">${MathMore.figOf(p)}</div>` : ''}<div class="mh-box mh-memo"><h4>📝 풀이 노트</h4><div class="mh-lines"><div class="mh-none">한 단계씩 같이 풀어 봐요!</div></div></div></div>
+    <div class="mh-chs"></div><div class="mh-end"></div>`;
+  const q = s => root.querySelector(s);
+  const E = {eq:q('.mh-eq'), dots:q('.mh-steps'), bub:q('.mh-bub'), lines:q('.mh-lines'), chs:q('.mh-chs'), end:q('.mh-end')};
+  const alive = () => root.isConnected;
+  let i = 0;
+  const dots = () => { E.dots.innerHTML = steps.map((_, k) => `<i class="${k < i ? 'on' : k === i ? 'now' : ''}"></i>`).join(''); };
+  function show(){
+    const s = steps[i];
+    E.eq.innerHTML = `<span class="mh-eqin">${s.eq}</span>`; dots();
+    E.bub.innerHTML = s.say; say(s.say); E.chs.innerHTML = '';
+    let done = false;
+    s.choices.forEach(v => {
+      const bt = document.createElement('button'); bt.type = 'button'; bt.className = 'mh-ch'; bt.innerHTML = H(v);
+      bt.onclick = () => {
+        if (done || !alive()) return;
+        if (MathCore.same(v, s.answer)){
+          done = true; bt.classList.add('mh-yes'); good();
+          const none = E.lines.querySelector('.mh-none'); if (none) none.remove();
+          const ln = document.createElement('div'); ln.className = 'mh-pop';
+          ln.innerHTML = '✓ ' + s.eq.split(QS).join(`<span class="cg">${H(s.answer)}</span>`);
+          E.lines.appendChild(ln);
+          setTimeout(() => { if (!alive()) return; i++; if (i >= steps.length) finish(); else show(); }, 400);
+        } else {
+          bt.classList.remove('mh-no'); void bt.offsetWidth; bt.classList.add('mh-no'); snd(200, .2, 'sine');
+          E.bub.innerHTML = s.say + `<br><small class="mh-oops">🔎 ${i ? '풀이 노트를 보면서 ' : ''}다시 생각해 봐요!</small>`;
+        }
+      };
+      E.chs.appendChild(bt);
+    });
+  }
+  function finish(){
+    dots(); E.chs.innerHTML = '';
+    E.eq.innerHTML = `<span class="mh-eqin">${MathCore.answerHtml(p)} 🎉</span>`;
+    E.bub.innerHTML = '짜잔! 한 단계씩 스스로 풀었어요! 👏 이제 원래 문제를 다시 풀어 봐요';
+    say(E.bub.innerHTML);
+    E.end.innerHTML = `<div class="mh-tip">${plan.tip}${wrongPick ? `<br><small class="cr">${why(p, wrongPick)}</small>` : ''}</div>
+      <div class="mh-center"><button type="button" class="mh-btn">이제 알겠어요! 문제 다시 풀기 →</button></div>`;
+    confetti(root); win();
+    let done = false;
+    E.end.querySelector('.mh-btn').onclick = () => { if (done) return; done = true; snd(700); if (typeof onDone === 'function') onDone(); };
+  }
+  show();
+}
+
 // ── 힌트 진행 ──
 function run(container, p, wrongPick, onDone){
   const plan = MathCore.hintPlan(p), steps = plan.steps, kind = plan.kind;
+  if (plan.ext) return runNote(container, p, plan, wrongPick, onDone);
   const fd = !isD(p.a), d = fd ? p.a.d : 0;
   CW = !fd || d <= 5 ? 52 : Math.max(16, Math.floor(260 / d) - 4);
   const root = mount(container);

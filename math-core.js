@@ -12,13 +12,26 @@ const dec = x => D(Math.round(x * 100));
 function frac(w, n, d){ const T = w * d + n, W = Math.floor(T / d); return {t:'f', w:W, n:T - W * d, d}; }
 const isD = v => v.t === 'd';
 const tot = v => v.w * v.d + v.n;                 // 분수 → 분자 총합
-const tot0 = v => isD(v) ? v.h : tot(v);         // 기본 단위 개수 (부호 확인용)
+const tot0 = v => v.t === 'q' ? v.n : v.t === 'r' ? 1 : isD(v) ? v.h : tot(v);   // 기본 단위 개수 (부호 확인용)
+// math-more.js 값: {t:'q', n, d, f, u} 정확한 분수값 (f 'i' 자연수, 'f' 분수, 'd' 소수, 'p' 백분율, u 단위), {t:'r', a, b} 비
+const isX = v => v.t === 'q' || v.t === 'r';
+const num = x => String(Number(x.toFixed(6)));
+function qText(v, unit){
+  if (v.t === 'r') return v.a + ' : ' + v.b;
+  let s;
+  if (v.f === 'p') s = num(v.n * 100 / v.d) + '%';
+  else if (v.f === 'f' && v.d !== 1){ const w = Math.floor(v.n / v.d), r = v.n - w * v.d; s = (w ? w + ' ' : '') + r + '/' + v.d; }
+  else s = num(v.n / v.d);
+  return s + (unit && v.u ? v.u : '');
+}
 const neg = v => tot0(v) < 0;
 const dig = (h, i) => Math.floor(h / Math.pow(10, i)) % 10;   // i: 0 백분의 일, 1 십분의 일, 2 일…
 
 // 값이 같나 (0.3 = 0.30, 1/5 = 2/10). 소수·분수가 섞이면 false
 function same(a, b){
   if (a.t !== b.t) return false;
+  if (a.t === 'q') return a.n * b.d === b.n * a.d;          // 0.5 = 50% = 1/2 (값이 같으면 같아요)
+  if (a.t === 'r') return a.a === b.a && a.b === b.b;       // 비는 항이 똑같아야 같아요 (2 : 3 ≠ 4 : 6)
   return isD(a) ? a.h === b.h : tot(a) * b.d === tot(b) * a.d;
 }
 function chk(a, b){
@@ -38,6 +51,7 @@ const dbl = v => isD(v) ? null : frac(v.w, v.n, 2 * v.d);
 
 // ── 글자 ──
 function text(v){
+  if (isX(v)) return qText(v, true);
   if (isD(v)){
     const s = v.h < 0 ? '-' : '', h = Math.abs(v.h), w = Math.floor(h / 100), r = h % 100;
     return s + (r === 0 ? w : r % 10 === 0 ? w + '.' + r / 10 : w + '.' + String(r).padStart(2, '0'));
@@ -48,7 +62,12 @@ function text(v){
 // 화면용: 분수는 분자 위, 가로줄, 분모 아래
 function html(v, cls){
   let s;
-  if (isD(v) || v.n === 0) s = text(v);
+  if (isX(v)){
+    if (v.t === 'q' && v.f === 'f' && v.d !== 1){ const w = Math.floor(v.n / v.d); s = html({t:'f', w, n:v.n - w * v.d, d:v.d}); }
+    else s = qText(v, false);
+    if (v.u) s += v.u === '°' ? '°' : `<span class="mu">${v.u}</span>`;
+  }
+  else if (isD(v) || v.n === 0) s = text(v);
   else {
     const f = `<span class="mf"><span>${v.n}</span><span class="md">${v.d}</span></span>`;
     s = v.w ? `<span class="mx">${v.w}${f}</span>` : f;
@@ -56,9 +75,21 @@ function html(v, cls){
   return cls ? `<span class="${cls}">${s}</span>` : s;
 }
 const SIGN = {'+':'+', '-':'−'};
-const problemHtml = p => `${html(p.a)} ${SIGN[p.op]} ${html(p.b)} = ?`;
-// 받침: 마지막으로 읽는 숫자 (분수는 분자, "오분의 이")
-function bat(v){ const s = !isD(v) && v.n ? String(v.n) : text(v); return '013678'.includes(s[s.length - 1]); }
+// 5~6학년 문제 (p.x) 는 math-more.js 가 그려요
+const problemHtml = p => p.x ? window.MathMore.problemHtml(p) : `${html(p.a)} ${SIGN[p.op]} ${html(p.b)} = ?`;
+// 결과 줄: 물음표 자리에 정답
+const answerHtml = p => p.x ? window.MathMore.answerHtml(p) : problemHtml(p).replace(/= \?$/, `= <b>${html(p.ans)}</b>`);
+// 받침: 마지막으로 읽는 숫자 (분수는 분자, "오분의 이"). 단위가 붙으면 단위로 (cm 센티미터, % 퍼센트, ° 도 → 받침 없음)
+function bat(v){
+  if (isX(v)){
+    if (v.u) return /[원명권점장둥뿔번]$/.test(v.u);
+    if (v.t === 'r') return '013678'.includes(String(v.b).slice(-1));
+    if (v.f === 'p') return false;
+    const s = v.f === 'f' && v.d !== 1 ? String(v.n % v.d) : qText(v, false);
+    return '013678'.includes(s[s.length - 1]);
+  }
+  const s = !isD(v) && v.n ? String(v.n) : text(v); return '013678'.includes(s[s.length - 1]);
+}
 const jo = (v, a, b) => bat(v) ? a : b;
 
 // ── 오답 ──
@@ -93,6 +124,7 @@ function mistakes(p){
 }
 // 정답과 값이 다르고 서로 다른 오답 n 개. 모자라면 정답 ±1단위로 채워요
 function distractors(p, n){
+  if (p.x) return window.MathMore.distractors(p, n);
   const out = [], ans = p.ans;
   const push = v => { if (v && !neg(v) && !same(v, ans) && !out.some(o => same(o, v))) out.push(v); };
   mistakes(p).forEach(push);
@@ -116,7 +148,7 @@ const ask = (say, eq, answer, cands, u, i) => ({say, eq, choices:opts(answer, ca
 // 마지막 단계: 원래 문제의 답 (보기는 오답 규칙 그대로)
 const finalStep = (p, say, eq, u, i) => ask(say, eq, p.ans, distractors(p, 4), u, i);
 
-function hintPlan(p){ return p.op === '+' ? planAdd(p) : planSub(p); }
+function hintPlan(p){ return p.x ? window.MathMore.hintPlan(p) : p.op === '+' ? planAdd(p) : planSub(p); }
 
 function planAdd(p){
   const {a, b} = p, fd = !isD(a);
@@ -225,5 +257,5 @@ function planSub(p){
   return {kind:'down', L, R, need, rest, made, unit, name, whole:hasW ? W : null, afterWhole:hasW ? Lc : null, steps};
 }
 
-window.MathCore = {dec, frac, same, add, sub, text, html, problemHtml, distractors, hintPlan};
+window.MathCore = {dec, frac, same, add, sub, text, html, problemHtml, answerHtml, bat, distractors, hintPlan};
 })();
