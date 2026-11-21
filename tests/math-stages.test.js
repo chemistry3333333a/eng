@@ -170,20 +170,21 @@ test('ensure fills math fields and keeps English data', () => {
   assert.equal(MS.ensure(T), T);
 });
 
-test('unlocked follows the English rule', () => {
+test('normal stages are always open, a boss opens after its whole chapter', () => {
   const S = MS.ensure({settings: {}});
-  assert.equal(MS.unlocked(S, 'm-fr1'), true);
-  assert.equal(MS.unlocked(S, 'm-fr2'), false);
-  S.math.stages['m-fr1'] = {stars: 0};
-  assert.equal(MS.unlocked(S, 'm-fr2'), false);
-  S.math.stages['m-fr4'] = {stars: 0};            // 기록이 있는 스테이지는 열림
-  assert.equal(MS.unlocked(S, 'm-fr4'), true);
-  delete S.math.stages['m-fr4'];
-  S.math.stages['m-fr1'] = {stars: 1};
-  assert.equal(MS.unlocked(S, 'm-fr2'), true);
-  assert.equal(MS.unlocked(S, 'm-fr3'), false);
-  S.settings.openAll = true;
+  for (const s of MATH_STAGES.filter(s => !s.boss)) assert.equal(MS.unlocked(S, s.id), true, s.id);
+  assert.equal(MS.unlocked(S, 'm-frB'), false);
+  ['m-fr1', 'm-fr2', 'm-fr3', 'm-fr4'].forEach(id => S.math.stages[id] = {stars: 1});
+  assert.equal(MS.unlocked(S, 'm-frB'), false);      // 한 단원이라도 남으면 잠겨 있어요
+  S.math.stages['m-fr5'] = {stars: 0};
+  assert.equal(MS.unlocked(S, 'm-frB'), false);      // 별 0개는 아직 못 깬 거예요
+  S.math.stages['m-fr5'] = {stars: 2};
+  assert.equal(MS.unlocked(S, 'm-frB'), true);
+  assert.equal(MS.unlocked(S, 'm-deB'), false);      // 다른 장 보스는 그대로 잠김
+  S.math.stages['m-deB'] = {stars: 1};               // 이미 도전한 보스는 열림
   assert.equal(MS.unlocked(S, 'm-deB'), true);
+  assert.equal(MS.unlocked(MS.ensure({settings: {openAll: true}}), 'm-ciB'), true);
+  assert.equal(MS.unlocked(S, 'nope'), false);
 });
 
 test('boss skills are visual only', () => {

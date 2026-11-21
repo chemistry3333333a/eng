@@ -60,12 +60,11 @@ test('old stages keep ids, order and chapters; new chapters only append', () => 
   assert.equal(MATH_STAGES.findIndex(s => s.id === 'm-ciB'), 104);             // 첫 PR 의 마지막 스테이지(105번째) 번호 그대로
 });
 
-test('an old save opens the first new stage only after the last old boss', () => {
+test('an old save can pick new stages right away but new bosses stay locked', () => {
   const S = MS.ensure({settings: {}, math: {coins: 40, stages: {'m-fr1': {stars: 3, best: 120}}, trophies: {'m-frB': 2}}});
-  assert.equal(MS.unlocked(S, 'm-pg1'), false);
-  S.math.stages['m-deB'] = {stars: 1, best: 50};
   assert.equal(MS.unlocked(S, 'm-pg1'), true);
-  assert.equal(MS.unlocked(S, 'm-pg2'), false);
+  assert.equal(MS.unlocked(S, 'm-pg2'), true);
+  assert.equal(MS.unlocked(S, 'm-ciB'), false);
   assert.equal(S.math.trophies['m-frB'], 2); assert.equal(S.math.coins, 40);
   assert.equal(MS.unlocked(MS.ensure({settings: {openAll: true}}), 'm-ciB'), true);
 });

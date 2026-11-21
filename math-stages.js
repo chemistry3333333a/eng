@@ -194,11 +194,13 @@ function ensure(S){
   if (!m.skills || typeof m.skills !== 'object') m.skills = {};
   return S;
 }
+// 보통 스테이지는 언제나 골라서 풀 수 있어요.
+// 보스는 그 장의 스테이지를 모두 깨야 열려요 (한 번 도전했거나 "모두 열기"면 열림)
 function unlocked(S, id){
-  const i = MATH_STAGES.findIndex(s => s.id === id), st = (S.math && S.math.stages) || {};
-  if (i < 0) return false;
-  const prev = i > 0 && st[MATH_STAGES[i - 1].id];
-  return i === 0 || !!(S.settings && S.settings.openAll) || !!st[id] || !!(prev && prev.stars > 0);
+  const s = MATH_STAGES.find(x => x.id === id), st = (S.math && S.math.stages) || {};
+  if (!s) return false;
+  if (!s.boss || (S.settings && S.settings.openAll) || st[id]) return true;
+  return MATH_STAGES.every(x => x.ch !== s.ch || x.boss || (st[x.id] && st[x.id].stars > 0));
 }
 
 // 별: 첫 시도에 맞힌 비율 (영어와 같은 기준)
