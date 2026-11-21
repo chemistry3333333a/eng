@@ -39,6 +39,7 @@ const last = n => String(n).slice(-1);
 const jn = (n, a, b) => '013678'.includes(last(n)) ? a : b;         // 숫자 뒤 조사 (받침 있으면 a)
 const jro = n => '036'.includes(last(n)) ? '으로' : '로';             // 1·7·8 (ㄹ 받침) 과 받침 없는 수는 '로'
 const KO = ['', '한', '두', '세', '네'];
+const jk = (w, a, b) => { const c = String(w).slice(-1).charCodeAt(0) - 0xAC00; return c >= 0 && c <= 11171 && c % 28 ? a : b; };   // 한글 낱말 뒤 조사
 const S = (say, eq, ans, alt) => ({say, eq, ans, alt: alt || []});
 const tbl = (xs, ys) => `<table class="mtb"><tr><th>□</th>${xs.map(v => `<td>${v}</td>`).join('')}</tr>` +
   `<tr><th>△</th>${ys.map(v => `<td>${v}</td>`).join('')}</tr></table>`;
@@ -694,7 +695,7 @@ const CB = [['면', 6, '위·아래, 앞·뒤, 왼쪽·오른쪽에 면이 2개�
   ['한 꼭짓점에서 만나는 면', 3, '위·아래 중 하나, 앞·뒤 중 하나, 왼쪽·오른쪽 중 하나가 만나요.', '1 + 1 + 1']];
 T.cb1 = {
   tip:'💡 직육면체와 정육면체는 면 6개, 모서리 12개, 꼭짓점 8개예요. 한 면과 수직인 면은 4개, 평행한 면은 1개예요!',
-  gen(){ const i = rnd(0, CB.length - 1), sd = pick(['직육면체', '정육면체', '주사위(정육면체)']); return {say:`${sd}를 떠올려 봐요`, eq:`${CB[i][0]}의 수 = ${QS}`, ans:N(CB[i][1], '개'), g:{i}}; },
+  gen(){ const i = rnd(0, CB.length - 1), sd = pick(['직육면체', '정육면체', '주사위(정육면체)']); return {say:`${sd}를 떠올려 봐요`, eq:`${CB[i][0]}의 수 = ${QS}`, ans:N(CB[i][1], '개'), g:{i, cube: sd !== '직육면체'}}; },
   wrong(p){ return CB.filter((_, j) => j !== p.g.i).map(c => [N(c[1], '개'), `${c[0]}의 수와 헷갈렸어요`]); },
   hint(p){ const c = CB[p.g.i]; return [S(c[2], `${c[3]} = ${QS}`, p.ans)]; },
 };
@@ -1249,6 +1250,188 @@ T.ci3 = {
   },
 };
 
+// ═════ 그림이 있어서 풀 수 있는 단원 (그림은 math-fig.js) ═════
+// 4-2 꺾은선그래프
+const LG = [['강낭콩의 키', 'cm', 2], ['교실의 온도', '°C', 2], ['하루 줄넘기 횟수', '번', 5]];
+function lgData(){
+  const [ttl, u, step] = pick(LG), mon = [3, 4, 5, 6, 7], v = [step * rnd(1, 4)];
+  for (let i = 1; i < 5; i++) v.push(Math.max(step, v[i - 1] + step * rnd(-1, 3)));
+  return {ttl, u, step, mon, v, hl:[]};
+}
+T.lg1 = {
+  tip:'💡 꺾은선그래프는 가로에서 때를 찾고, 점에서 세로 눈금을 읽어요. 세로 눈금 한 칸의 크기를 먼저 알아봐요!',
+  gen(){ const g = lgData(), i = rnd(0, 4); g.i = i; g.hl = [i]; return {say:`${g.ttl}${jk(g.ttl, '을', '를')} 꺾은선그래프로 나타냈어요`, eq:`${g.mon[i]}월 = ${QS}`, ans:N(g.v[i], g.u), g}; },
+  wrong(p){ const {v, i, u, mon} = p.g; return v.map((x, j) => [N(x, u), `${mon[j]}월의 값을 읽었어요`]).filter((_, j) => j !== i); },
+  hint(p){
+    const {step, u, mon, i} = p.g;
+    return [S('세로 눈금 한 칸은 얼마일까요?', `세로 눈금 한 칸 = ${QS}`, N(step, u)),
+      S(`가로에서 ${mon[i]}월을 찾아 점까지 올라간 다음, 왼쪽 세로 눈금을 읽어요.`, p.eq, p.ans)];
+  },
+};
+T.lg2 = {
+  tip:'💡 두 때의 값을 각각 읽은 다음, 큰 값에서 작은 값을 빼면 변화한 양이에요!',
+  gen(){
+    for (;;){
+      const g = lgData(), i = rnd(0, 3), j = Math.min(4, i + rnd(1, 2));
+      if (g.v[i] !== g.v[j]){ g.i = i; g.j = j; g.hl = [i, j]; return {say:`${g.ttl}${jk(g.ttl, '을', '를')} 꺾은선그래프로 나타냈어요`, eq:`${g.mon[i]}월과 ${g.mon[j]}월의 차 = ${QS}`, ans:N(Math.abs(g.v[j] - g.v[i]), g.u), g}; }
+    }
+  },
+  wrong(p){ const {v, i, j, u} = p.g; return [[N(v[i] + v[j], u), '더하지 말고 빼요'], [N(Math.max(v[i], v[j]), u), '한 달의 값만 읽었어요']]; },
+  hint(p){
+    const {v, i, j, u, mon} = p.g;
+    return [S(`${mon[i]}월의 값은?`, `${mon[i]}월 = ${QS}`, N(v[i], u)), S(`${mon[j]}월의 값은?`, `${mon[j]}월 = ${QS}`, N(v[j], u)),
+      S('큰 값에서 작은 값을 빼요.', `${Math.max(v[i], v[j])} − ${Math.min(v[i], v[j])} = ${QS}`, p.ans)];
+  },
+};
+// 5-2 합동과 대칭
+const SIDE1 = ['ㄱㄴ', 'ㄴㄷ', 'ㄷㄱ'], SIDE2 = ['ㄹㅁ', 'ㅁㅂ', 'ㅂㄹ'];
+const syTip = '💡 합동인 도형에서 대응하는 변의 길이와 대응하는 각의 크기는 서로 같아요!';
+T.sy1 = {
+  tip:syTip,
+  gen(){
+    for (;;){
+      const s = [rnd(4, 12), rnd(4, 12), rnd(4, 12)];
+      if (new Set(s).size === 3 && s[0] + s[1] > s[2] + 1 && s[1] + s[2] > s[0] + 1 && s[0] + s[2] > s[1] + 1){
+        const k = rnd(0, 2);
+        return {say:'삼각형 ㄱㄴㄷ과 삼각형 ㄹㅁㅂ은 서로 합동이에요', eq:`변 ${SIDE2[k]} = ${QS}`, ans:N(s[k], 'cm'), g:{s, k}};
+      }
+    }
+  },
+  wrong(p){ const {s, k} = p.g; return s.map((x, i) => [N(x, 'cm'), `변 ${SIDE1[i]}의 길이예요. 대응하는 변이 아니에요`]).filter((_, i) => i !== k); },
+  hint(p){ const k = p.g.k; return [S(`변 ${SIDE2[k]}과 대응하는 변은 변 ${SIDE1[k]}이에요. 대응하는 변의 길이는 같아요.`, `변 ${SIDE1[k]} = ${QS}`, p.ans)]; },
+};
+T.sy2 = {
+  tip:syTip + ' 삼각형 세 각의 합은 180°예요.',
+  gen(){
+    for (;;){
+      const A = rnd(30, 100), B = rnd(30, 100), C = 180 - A - B, k = rnd(1, 2);
+      if (C >= 25 && A !== B && B !== C && A !== C) return {say:'삼각형 ㄱㄴㄷ과 삼각형 ㄹㅁㅂ은 서로 합동이에요', eq:`각 ${k === 1 ? 'ㄹㅁㅂ' : 'ㅁㅂㄹ'} = ${QS}`, ans:N(k === 1 ? B : C, '°'), g:{A, B, k}};
+    }
+  },
+  wrong(p){ const {A, B, k} = p.g, C = 180 - A - B; return [[N(A, '°'), '각 ㄴㄱㄷ의 크기예요. 대응하는 각이 아니에요'], [N(k === 1 ? C : B, '°'), '대응하는 각을 다시 찾아봐요'], [N(180 - A, '°'), '세 각을 모두 빼야 해요']]; },
+  hint(p){
+    const {A, B, k} = p.g;
+    if (k === 1) return [S('각 ㄹㅁㅂ과 대응하는 각은 각 ㄱㄴㄷ이에요. 대응하는 각의 크기는 같아요.', `각 ㄱㄴㄷ = ${QS}`, p.ans)];
+    return [S('각 ㅁㅂㄹ과 대응하는 각은 각 ㄴㄷㄱ이에요. 삼각형 세 각의 합은?', `세 각의 합 = ${QS}`, N(180, '°'), [N(360, '°')]),
+      S('180°에서 아는 두 각을 빼요.', `180° − ${A}° − ${B}° = ${QS}`, p.ans)];
+  },
+};
+T.sy3 = {
+  tip:'💡 대칭축으로 접거나 대칭의 중심으로 180° 돌렸을 때 겹치는 변이 대응변이에요. 대응변의 길이는 같아요!',
+  gen(){
+    const m = rnd(0, 1), k = rnd(0, 1);
+    let a, b; do { a = rnd(4, 12); b = rnd(4, 12); } while (a === b);
+    if (m === 0) return {say:'선대칭도형이에요. 점선은 대칭축이에요', eq:`변 ${k ? 'ㄴㄷ' : 'ㄱㄴ'} = ${QS}`, ans:N(k ? b : a, 'cm'), g:{m, k, a, b}};
+    return {say:'점대칭도형이에요. 점 ㅇ은 대칭의 중심이에요', eq:`변 ${k ? 'ㄴㄷ' : 'ㄱㄴ'} = ${QS}`, ans:N(k ? b : a, 'cm'), g:{m, k, a, b}};
+  },
+  wrong(p){ const {k, a, b} = p.g; return [[N(k ? a : b, 'cm'), '대응변을 다시 찾아봐요'], [N(a + b, 'cm'), '대응변 하나의 길이만 구해요']]; },
+  hint(p){
+    const {m, k} = p.g, pair = m === 0 ? (k ? 'ㄹㄷ' : 'ㄱㄹ') : (k ? 'ㄱㄹ' : 'ㄹㄷ');
+    return [S(`${m === 0 ? '대칭축으로 접으면' : '대칭의 중심으로 180° 돌리면'} 변 ${k ? 'ㄴㄷ' : 'ㄱㄴ'}과 겹치는 변은 변 ${pair}이에요.`, `변 ${pair} = ${QS}`, p.ans)];
+  },
+};
+// 6-1 여러 가지 그래프
+const GR = [['좋아하는 과일', ['사과', '포도', '귤', '배']], ['좋아하는 운동', ['축구', '줄넘기', '수영', '야구']], ['가고 싶은 곳', ['바다', '산', '놀이공원', '박물관']]];
+function grData(){
+  const [topic, names] = pick(GR);
+  for (;;){ const p = [rnd(2, 8), rnd(2, 8), rnd(2, 8)].map(x => x * 5), r = 100 - p[0] - p[1] - p[2]; if (r >= 10) return {topic, names, p:[...p, r]}; }
+}
+T.gr1 = {
+  tip:'💡 띠그래프·원그래프의 백분율을 모두 더하면 100%예요. 모르는 항목은 100%에서 나머지를 빼요!',
+  gen(){ const g = grData(); g.h = rnd(0, 3); return {say:`${g.topic}${jk(g.topic, '을', '를')} 조사해 띠그래프로 나타냈어요`, eq:`${g.names[g.h]} = ${QS}`, ans:Q(g.p[g.h], 100, 'p'), g}; },
+  wrong(p){ const {p: ps, h, names} = p.g, so = 100 - ps[h]; return [[Q(so, 100, 'p'), '100%에서 나머지를 빼야 해요'], ...ps.map((x, i) => [Q(x, 100, 'p'), `${names[i]}의 백분율이에요`]).filter((_, i) => i !== h)]; },
+  hint(p){
+    const {p: ps, h} = p.g, o = ps.filter((_, i) => i !== h), so = o.reduce((s, x) => s + x, 0);
+    return [S('나머지 항목의 백분율을 모두 더해요.', `${o.join('% + ')}% = ${QS}`, Q(so, 100, 'p')),
+      S('띠그래프 전체는 100%예요. 100%에서 빼요.', `100% − ${so}% = ${QS}`, p.ans)];
+  },
+};
+T.gr2 = {
+  tip:'💡 원그래프에서 어떤 항목의 수 = 전체 수 × 백분율 ÷ 100이에요!',
+  gen(){
+    const g = grData(), n = pick([20, 40, 60, 80, 100, 200]); g.n = n; g.k = rnd(0, 3);
+    return {say:`학생 ${n}명이 ${g.topic}${jk(g.topic, '을', '를')} 조사해 원그래프로 나타냈어요`, eq:`${g.names[g.k]} = ${QS}`, ans:N(n * g.p[g.k] / 100, '명'), g};
+  },
+  wrong(p){ const {n, p: ps, k} = p.g; return [[N(ps[k], '명'), '백분율을 사람 수로 읽었어요. 전체의 몇 %인지 계산해요'], [N(n * ps[k] / 10, '명'), '100으로 나눠야 해요']]; },
+  hint(p){
+    const {n, p: ps, k, names} = p.g;
+    return [S(`${names[k]}${jk(names[k], '은', '는')} 전체의 몇 %일까요?`, `${names[k]}의 백분율 = ${QS}`, Q(ps[k], 100, 'p')),
+      S(`전체 ${n}명의 ${ps[k]}%를 구해요.`, `${n} × ${ps[k]} ÷ 100 = ${QS}`, p.ans)];
+  },
+};
+// 6-2 공간과 입체 (쌓기나무)
+T.st1 = {
+  tip:'💡 위에서 본 모양의 각 칸에 쓴 수는 그 자리에 쌓은 쌓기나무 개수예요. 모두 더하면 전체 개수!',
+  gen(){
+    const R_ = rnd(2, 3), C = rnd(2, 3), grid = [];
+    for (let j = 0; j < R_; j++){ const row = []; for (let i = 0; i < C; i++) row.push(rnd(1, 3)); grid.push(row); }
+    return {say:'쌓기나무로 쌓은 모양과 위에서 본 모양이에요', eq:`쌓기나무의 수 = ${QS}`, ans:N(grid.flat().reduce((s, x) => s + x, 0), '개'), g:{grid}};
+  },
+  wrong(p){ const f = p.g.grid.flat(), t = f.reduce((s, x) => s + x, 0); return [[N(f.length, '개'), '칸의 수가 아니라 칸에 쓴 수를 모두 더해요'], [N(t - 1, '개'), '빠뜨린 칸이 없는지 세어 봐요']]; },
+  hint(p){
+    const rows = p.g.grid.map(r => r.reduce((s, x) => s + x, 0));
+    return [...p.g.grid.map((r, j) => S(`위에서 본 모양의 ${['첫째', '둘째', '셋째'][j]} 줄의 수를 더해요.`, `${r.join(' + ')} = ${QS}`, N(rows[j], '개'))),
+      S('줄마다 더한 수를 모두 더해요.', `${rows.join(' + ')} = ${QS}`, p.ans)];
+  },
+};
+T.st2 = {
+  tip:'💡 쌓기나무는 한 줄씩 몇 층인지 세어서 더하면 빠짐없이 셀 수 있어요!',
+  gen(){ const k = rnd(2, 4), h = []; for (let i = 0; i < k; i++) h.push(rnd(1, 3)); return {say:'쌓기나무를 한 줄로 쌓았어요', eq:`쌓기나무의 수 = ${QS}`, ans:N(h.reduce((s, x) => s + x, 0), '개'), g:{h}}; },
+  wrong(p){ const h = p.g.h; return [[N(h.length, '개'), '줄의 수가 아니라 쌓기나무를 모두 세어요'], [N(Math.max(...h), '개'), '가장 높은 줄만 셌어요']]; },
+  hint(p){ return [S('왼쪽부터 한 줄씩 몇 층인지 세어서 더해요.', `${p.g.h.join(' + ')} = ${QS}`, p.ans)]; },
+};
+// 6-2 원기둥·원뿔·구
+T.cy1 = {
+  tip:'💡 원기둥의 전개도에서 옆면의 가로는 밑면의 둘레(원주)와 같고, 세로는 원기둥의 높이와 같아요!',
+  gen(){ const r = rnd(2, 10), h = rnd(3, 15); return {say:`원기둥의 전개도예요 ${PI}`, eq:`옆면의 가로 = ${QS}`, ans:Q(2 * r * 314, 100, 'd', 'cm'), g:{r, h}}; },
+  wrong(p){ const {r, h} = p.g; return [[Q(r * 314, 100, 'd', 'cm'), '반지름이 아니라 지름에 원주율을 곱해요'], [N(h, 'cm'), '옆면의 세로(높이)와 헷갈렸어요'], [Q(r * r * 314, 100, 'd', 'cm'), '밑면의 넓이와 헷갈렸어요']]; },
+  hint(p){
+    const {r} = p.g;
+    return [S('옆면의 가로는 밑면의 원주와 같아요. 먼저 지름은?', `${r} × 2 = ${QS}`, N(2 * r, 'cm')),
+      S('원주 = 지름 × 원주율', `${2 * r} × 3.14 = ${QS}`, p.ans)];
+  },
+};
+const CONE = [[3, 4, 5], [6, 8, 10], [5, 12, 13], [9, 12, 15], [8, 15, 17], [12, 16, 20], [7, 24, 25]];
+const CONEP = ['높이', '모선의 길이', '밑면의 지름'];
+T.cy2 = {
+  tip:'💡 원뿔의 높이는 꼭짓점에서 밑면에 수직으로 내린 선분, 모선은 꼭짓점과 밑면 둘레의 한 점을 이은 선분이에요!',
+  gen(){ const t = pick(CONE), k = rnd(0, 2); return {say:'원뿔이에요', eq:`${CONEP[k]} = ${QS}`, ans:N(k === 2 ? 2 * t[0] : t[k + 1], 'cm'), g:{t, k}}; },
+  wrong(p){
+    const {t, k} = p.g, o = [];
+    if (k !== 0) o.push([N(t[1], 'cm'), '높이예요. 높이는 꼭짓점에서 밑면에 수직으로 내린 선분이에요']);
+    if (k !== 1) o.push([N(t[2], 'cm'), '모선의 길이예요. 모선은 꼭짓점과 밑면 둘레를 이은 선분이에요']);
+    o.push([N(t[0], 'cm'), '밑면의 반지름이에요']);
+    return o;
+  },
+  hint(p){
+    const {t, k} = p.g;
+    if (k === 0) return [S('높이는 꼭짓점에서 밑면에 수직으로 내린 점선이에요.', p.eq, p.ans)];
+    if (k === 1) return [S('모선은 꼭짓점과 밑면 둘레의 한 점을 이은 선분이에요.', p.eq, p.ans)];
+    return [S('밑면의 반지름은?', `반지름 = ${QS}`, N(t[0], 'cm')), S('지름 = 반지름 × 2', `${t[0]} × 2 = ${QS}`, p.ans)];
+  },
+};
+T.cy3 = {
+  tip:'💡 구의 중심에서 겉면의 한 점까지가 반지름, 반지름의 2배가 지름이에요. 구를 반으로 자른 면은 원이에요!',
+  gen(){
+    const r = rnd(2, 12), m = rnd(0, 2);
+    if (m === 0) return {say:'구예요', eq:`지름 = ${QS}`, ans:N(2 * r, 'cm'), g:{r, m}};
+    if (m === 1) return {say:'구예요', eq:`반지름 = ${QS}`, ans:N(r, 'cm'), g:{r, m}};
+    return {say:`구를 반으로 자른 면은 원이에요 ${PI}`, eq:`자른 면의 넓이 = ${QS}`, ans:Q(r * r * 314, 100, 'd', 'cm²'), g:{r, m}};
+  },
+  wrong(p){
+    const {r, m} = p.g;
+    if (m === 0) return [[N(r, 'cm'), '반지름이에요. 지름은 반지름의 2배예요']];
+    if (m === 1) return [[N(4 * r, 'cm'), '반지름은 지름의 반이에요']];
+    return [[Q(2 * r * 314, 100, 'd', 'cm²'), '원주와 헷갈렸어요'], [Q(4 * r * r * 314, 100, 'd', 'cm²'), '지름이 아니라 반지름으로 계산해요']];
+  },
+  hint(p){
+    const {r, m} = p.g;
+    if (m === 0) return [S('지름 = 반지름 × 2', `${r} × 2 = ${QS}`, p.ans)];
+    if (m === 1) return [S('반지름 = 지름 ÷ 2', `${2 * r} ÷ 2 = ${QS}`, p.ans)];
+    return [S('자른 면은 반지름이 구와 같은 원이에요. 반지름 × 반지름', `${r} × ${r} = ${QS}`, N(r * r)), S('원주율 3.14를 곱해요.', `${r * r} × 3.14 = ${QS}`, p.ans)];
+  },
+};
+
 // ── 보기 고르기 ──
 const isZero = v => v.t === 'q' && v.n === 0;
 // 정답 v 에서 k 단위만큼 떨어진 값 (자연수 ±k, 소수는 끝자리 ±k, 분수는 분자 ±k, 백분율 ±5k%, 비는 한 항 ±k)
@@ -1288,7 +1471,9 @@ function hintPlan(p){
   });
   return {kind:p.x, ext:true, name:'풀이 노트', steps, tip:t.tip};
 }
-const problemHtml = p => `<span class="mqs">${p.say}</span>${p.eq}`;
+// 그림이 있으면 식 위(가로 화면에서는 왼쪽)에 그려요
+const figOf = p => (window.MathFig && MathFig.draw(p)) || '';
+const problemHtml = p => { const f = figOf(p); return `<span class="mqs">${p.say}</span>` + (f ? `<span class="mqrow">${f}<span class="mqeq">${p.eq}</span></span>` : p.eq); };
 const answerHtml = p => p.eq.split(QS).join(`<b>${M.html(p.ans)}</b>`);
 // 아이가 고른 오답이 왜 틀렸나
 function why(p, w){
@@ -1300,5 +1485,5 @@ function why(p, w){
   return pre + `정답이 아니에요. 정답은 ${M.html(p.ans)}${M.bat(p.ans) ? '이에요' : '예요'}. 풀이 노트를 다시 따라가 봐요!`;
 }
 
-window.MathMore = {has, gen, distractors, hintPlan, problemHtml, answerHtml, why, QS, T, near, _v:{Q, N, Fr, Dn, R}};
+window.MathMore = {figOf, has, gen, distractors, hintPlan, problemHtml, answerHtml, why, QS, T, near, _v:{Q, N, Fr, Dn, R}};
 })();

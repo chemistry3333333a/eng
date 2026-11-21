@@ -19,6 +19,32 @@ const css = `
 .mtb{border-collapse:collapse;margin:0 auto;font-size:.62em;line-height:1.3;}
 .mtb th,.mtb td{border:2px solid #cbd5e1;padding:2px 12px;text-align:center;}
 .mtb th{background:#eef2f6;}
+/* 도형·그래프 그림 (math-fig.js). 흰 카드 위에서 읽히는 고정 색 */
+.mfig{display:block;width:auto;height:auto;max-width:100%;max-height:min(26vh,200px);margin:0 auto;font-family:inherit;overflow:visible;}
+.mfig text{font-size:15px;font-weight:700;fill:#1e293b;text-anchor:middle;dominant-baseline:central;paint-order:stroke;stroke:#fff;stroke-width:4px;stroke-linejoin:round;}
+.mfig text.sm{font-size:13px;fill:#475569;}
+.mfig text.nm{font-size:21px;fill:#2f80ed;}
+.mfig text.q{fill:#ea7a1a;font-size:20px;}
+.mfig .sh{fill:#dbeafe;stroke:#334155;stroke-width:2.5;stroke-linejoin:round;}
+.mfig .fc{fill:#dbeafe;stroke:#334155;stroke-width:2.5;stroke-linejoin:round;}
+.mfig .fc.t{fill:#eff6ff;} .mfig .fc.r{fill:#bfdbfe;}
+.mfig .hl{fill:#fde68a;stroke:#334155;stroke-width:2.5;}
+.mfig .ln{fill:none;stroke:#334155;stroke-width:2.5;stroke-linejoin:round;stroke-linecap:round;}
+.mfig .ln.thin{stroke-width:1.6;}
+.mfig .ln.o{stroke:#ea7a1a;stroke-width:3.5;}
+.mfig .dz{stroke-dasharray:6 5;}
+.mfig .gd{stroke:#e2e8f0;stroke-width:1.2;}
+.mfig .tk{stroke:#334155;stroke-width:2;}
+.mfig .arc{fill:none;stroke:#2f80ed;stroke-width:2;}
+.mfig .dt{fill:#334155;} .mfig .dt.o{fill:#ea7a1a;}
+.mfig .bx{stroke:#fff;stroke-width:2;}
+.mfig .bx0{fill:#f8fafc;stroke:#cbd5e1;stroke-width:1.5;}
+.mfig .cu{stroke:#1e3a8a;stroke-width:1.4;stroke-linejoin:round;}
+.mfig .cu.t{fill:#fde68a;} .mfig .cu.l{fill:#fbbf24;} .mfig .cu.r{fill:#f59e0b;}
+.mqrow{display:flex;flex-direction:column;align-items:center;gap:2px;}
+.mqrow .mfig{max-width:min(100%,360px);}
+.mh-figbox{flex:1;min-width:240px;}
+.mh-figbox .mfig{max-height:min(30vh,220px);}
 .mh-memo{flex:1;min-width:260px;text-align:left;}
 .mh-lines>div{font-size:20px;font-weight:800;line-height:1.9;padding:2px 4px;border-bottom:1px dashed #cbd5e1;}
 .mh-lines>div.mh-pop{animation:mhPop .5s;}
@@ -306,7 +332,7 @@ function runNote(container, p, plan, wrongPick, onDone){
   const steps = plan.steps, QS = MathMore.QS, root = mount(container);
   root.innerHTML = `<div class="mh-eq"></div><div class="mh-steps"></div>
     <div class="mh-owl"><div class="mh-who">🦉</div><div class="mh-bub"></div></div>
-    <div class="mh-bench"><div class="mh-box mh-memo"><h4>📝 풀이 노트</h4><div class="mh-lines"><div class="mh-none">한 단계씩 같이 풀어 봐요!</div></div></div></div>
+    <div class="mh-bench">${MathMore.figOf(p) ? `<div class="mh-box mh-figbox">${MathMore.figOf(p)}</div>` : ''}<div class="mh-box mh-memo"><h4>📝 풀이 노트</h4><div class="mh-lines"><div class="mh-none">한 단계씩 같이 풀어 봐요!</div></div></div></div>
     <div class="mh-chs"></div><div class="mh-end"></div>`;
   const q = s => root.querySelector(s);
   const E = {eq:q('.mh-eq'), dots:q('.mh-steps'), bub:q('.mh-bub'), lines:q('.mh-lines'), chs:q('.mh-chs'), end:q('.mh-end')};

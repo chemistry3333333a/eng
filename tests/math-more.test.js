@@ -4,8 +4,8 @@ const vm = require('vm');
 
 // math-hint.js 는 불러올 때 <style> 만 붙여요. 가짜 document 로 충분
 const doc = {createElement: () => ({}), head: {appendChild(){}}};
-const ctx = load(['math-core.js', 'math-more.js', 'math-stages.js', 'math-hint.js'], {document: doc});
-const M = ctx.MathCore, MS = ctx.MathStages, MM = ctx.MathMore, MH = ctx.MathHint;
+const ctx = load(['math-core.js', 'math-more.js', 'math-fig.js', 'math-stages.js', 'math-hint.js'], {document: doc});
+const M = ctx.MathCore, MS = ctx.MathStages, MM = ctx.MathMore, MH = ctx.MathHint, MF = ctx.MathFig;
 const {Q, N, Fr, Dn, R} = MM._v;
 const MATH_STAGES = vm.runInContext('MATH_STAGES', ctx);
 const MATH_CHAPTERS = vm.runInContext('MATH_CHAPTERS', ctx);
@@ -53,8 +53,11 @@ test('old stages keep ids, order and chapters; new chapters only append', () => 
     assert.equal(st[st.length - 1].id, c.boss.id); assert.ok(st[st.length - 1].boss);
     assert.ok(MATH_BOSS[c.boss.id], c.boss.id + ' boss info');
   });
-  const grades = [...new Set(MATH_CHAPTERS.map(c => c.g))];
-  assert.deepEqual(J(grades), ['4-2', '5-1', '5-2', '6-1', '6-2']);           // 학년 순서대로
+  // 첫 PR 의 21개 챕터는 학년 순서대로, 그림 단원 5개는 번호가 안 바뀌게 맨 뒤에
+  const ids2 = MATH_CHAPTERS.map(c => c.id);
+  assert.deepEqual(J(ids2.slice(2, 23)), ['pg', 'mx', 'dm', 'cr', 'rc', 'fu', 'ar', 'ro', 'fm', 'dx', 'cb', 'av', 'fd', 'pm', 'dd', 'rt', 'vb', 'fq', 'dq', 'pp', 'ci']);
+  assert.deepEqual(J(ids2.slice(23)), ['lg', 'sy', 'gr', 'st', 'cy']);
+  assert.equal(MATH_STAGES.findIndex(s => s.id === 'm-ciB'), 104);             // 첫 PR 의 마지막 스테이지(105번째) 번호 그대로
 });
 
 test('an old save opens the first new stage only after the last old boss', () => {
@@ -114,7 +117,7 @@ test('every new stage makes sound problems, options and hint plans (300 each)', 
 
 test('buildQueue: 10 per new stage, 12 per new boss mixing its chapter, no duplicates', () => {
   for (const st of NEW) for (let i = 0; i < 15; i++) {
-    const q = MS.buildQueue(st.id), key = p => p.say + p.eq;
+    const q = MS.buildQueue(st.id), key = p => p.say + p.eq + JSON.stringify(p.g);
     assert.equal(q.length, st.boss ? 12 : 10, st.id);
     assert.equal(new Set(q.map(key)).size, q.length, st.id + ' duplicates');
     if (st.boss) assert.ok(new Set(q.map(p => p.x)).size >= Math.min(2, MATH_CHAPTERS[st.ch].stages.length), st.id + ' mixes');
@@ -180,4 +183,47 @@ test('classic mistakes show up with an explanation', () => {
   assert.ok(MH._t.why(q, N(56)).includes('곱셈이 먼저'));
   assert.ok(MH._t.why(q, N(99)).includes('정답은'));                            // 모르는 오답은 정답을 알려 줘요
   assert.equal(MH._t.tip(M.hintPlan(q), q), MM.T.mx3.tip);
+});
+
+// ── 그림 ──
+const FIGX = ['pg1', 'pg2', 'pg3', 'ar1', 'ar2', 'ar3', 'cb1', 'cb2', 'pm1', 'pm2', 'vb1', 'vb2', 'vb3', 'ci1', 'ci2', 'ci3',
+  'lg1', 'lg2', 'sy1', 'sy2', 'sy3', 'gr1', 'gr2', 'st1', 'st2', 'cy1', 'cy2', 'cy3'];
+const texts = svg => [...svg.matchAll(/<text[^>]*>([^<]*)<\/text>/g)].map(m => m[1]);
+test('every shape and graph stage draws a clean SVG figure (200 each)', () => {
+  for (const x of FIGX) for (let i = 0; i < 200; i++) {
+    const p = MS.gen('m-' + x), f = MF.draw(p), L = x + ' ' + strip(M.answerHtml(p));
+    assert.ok(/^<svg class="mfig" viewBox="0 0 \d+(\.\d)? \d+(\.\d)?"[^>]*>.*<\/svg>$/s.test(f), L + ' svg');
+    assert.ok(!/NaN|undefined|Infinity/.test(f), L + ' broken numbers');
+    assert.ok(M.problemHtml(p).includes(f), L + ' figure shown with the question');
+  }
+  assert.equal(MF.draw(MS.gen('m-mx1')), '');                                   // 그림이 필요 없는 유형
+  assert.equal(MF.draw(MS.gen('m-fr1')), '');                                   // 4-2 블록 문제는 그대로
+});
+test('figures show the problem numbers and mark the unknown with ?', () => {
+  for (let i = 0; i < 200; i++) {
+    let p = MS.gen('m-ar1'), t = texts(MF.draw(p));
+    assert.ok(t.includes(p.g.a + 'cm') && t.some(s => /\?/.test(s)), 'ar1 ' + t);
+    p = MS.gen('m-pg1'); t = texts(MF.draw(p));
+    assert.ok(t.includes(p.g.t ? p.g.t + '°' : p.g.b + '°') && t.includes('?'), 'pg1 ' + t);
+    p = MS.gen('m-sy1'); t = texts(MF.draw(p));
+    assert.ok(p.g.s.every(v => t.includes(v + 'cm')) && t.filter(s => s === '?').length === 1, 'sy1 ' + t);
+    p = MS.gen('m-gr1'); t = texts(MF.draw(p));
+    assert.ok(t.includes('?') && !t.includes(M.text(p.ans)) || p.g.p.filter(v => v + '%' === M.text(p.ans)).length > 1, 'gr1 hides the answer ' + t);
+    p = MS.gen('m-st1'); t = texts(MF.draw(p));
+    assert.equal(t.filter(s => /^\d$/.test(s)).length, p.g.grid.flat().length, 'st1 numbers in grid');
+    p = MS.gen('m-ci2'); t = texts(MF.draw(p));
+    assert.ok(t.includes('?') && t.some(s => s.includes(p.g.C)), 'ci2 ' + t);
+  }
+});
+test('picture units: answers match the data', () => {
+  for (let i = 0; i < 300; i++) {
+    let p = MS.gen('m-lg1'); assert.equal(val(p.ans), p.g.v[p.g.i]);
+    p = MS.gen('m-lg2'); assert.equal(val(p.ans), Math.abs(p.g.v[p.g.j] - p.g.v[p.g.i]));
+    p = MS.gen('m-gr1'); assert.equal(p.g.p.reduce((s, x) => s + x, 0), 100); assert.ok(close(val(p.ans) * 100, p.g.p[p.g.h]));
+    p = MS.gen('m-gr2'); assert.equal(val(p.ans), p.g.n * p.g.p[p.g.k] / 100); assert.ok(Number.isInteger(val(p.ans)));
+    p = MS.gen('m-st1'); assert.equal(val(p.ans), p.g.grid.flat().reduce((s, x) => s + x, 0));
+    p = MS.gen('m-sy2'); assert.equal(val(p.ans), p.g.k === 1 ? p.g.B : 180 - p.g.A - p.g.B);
+    p = MS.gen('m-cy1'); assert.ok(close(val(p.ans), 2 * p.g.r * 3.14));
+    p = MS.gen('m-cy2'); const [r, h, l] = p.g.t; assert.equal(r * r + h * h, l * l);
+  }
 });

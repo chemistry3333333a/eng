@@ -18,6 +18,24 @@ const css = `
 #mgame{gap:8px;}
 #mgame .mq{align-self:center;background:#fff;border-radius:22px;padding:10px 26px;font-size:clamp(30px,7vw,54px);font-weight:800;
   line-height:1.4;text-align:center;box-shadow:0 5px 0 rgba(0,0,0,.1);max-width:100%;box-sizing:border-box;}
+#mgame.hasfig .mq{padding:6px 18px;font-size:clamp(26px,6vw,44px);}
+#mgame.hasfig .field{--size:min(36vw,22vh,200px);}
+#mgame.hasfig .field.five{--size:min(28vw,17vh,180px);}
+@media (orientation:landscape){
+  #mgame.hasfig .field{--size:min(19vw,36vh,200px);}
+  #mgame.hasfig .field.five{--size:min(16vw,32vh,180px);}
+}
+@media (orientation:landscape) and (max-height:560px){   /* 폰 가로: 왼쪽에 문제·그림, 오른쪽에 몬스터 */
+  #mgame.hasfig.on{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);grid-template-rows:auto auto auto minmax(0,1fr);column-gap:12px;}
+  #mgame.hasfig > .topbar, #mgame.hasfig > #bossRow{grid-column:1 / -1;}
+  #mgame.hasfig .mq{grid-column:1;grid-row:3 / 5;align-self:center;padding:6px 14px;font-size:clamp(22px,4vw,34px);line-height:1.3;}
+  #mgame.hasfig .mqrow{flex-direction:column;}
+  #mgame.hasfig .mqrow .mfig{max-height:calc(100vh - 215px);max-width:100%;}
+  #mgame.hasfig .status{grid-column:2;grid-row:3;}
+  #mgame.hasfig .field{grid-column:2;grid-row:4;--size:min(19vw,26vh,200px);gap:min(2vw,12px);}
+  #mgame.hasfig .field.five{--size:min(13vw,23vh,180px);}
+  #mgame.hasfig #avPalM{left:auto;right:14px;}
+}
 #mgame .mon .pic.mv{font-size:calc(var(--size)*.2);font-weight:800;line-height:1.1;}
 #mgame .status .answer .mf,#mgame .status .answer .mx{font-size:.9em;}
 #avPalM{position:absolute;left:14px;bottom:14px;z-index:5;pointer-events:none;}
@@ -235,6 +253,7 @@ function next(){
   Q = {p, opts:MathStages.options(p, n), tries:0, afterHint:false, glow:false, locked:false, t0:Date.now(), wrong:null};
   dots();
   $('mQ').innerHTML = MathCore.problemHtml(p);
+  mg.classList.toggle('hasfig', !!$('mQ').querySelector('.mfig'));   // 그림이 있으면 몬스터를 조금 작게
   $('mStatus').innerHTML = '';
   field();
 }

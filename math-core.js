@@ -82,7 +82,7 @@ const answerHtml = p => p.x ? window.MathMore.answerHtml(p) : problemHtml(p).rep
 // 받침: 마지막으로 읽는 숫자 (분수는 분자, "오분의 이"). 단위가 붙으면 단위로 (cm 센티미터, % 퍼센트, ° 도 → 받침 없음)
 function bat(v){
   if (isX(v)){
-    if (v.u) return /[원명권점장둥뿔]$/.test(v.u);
+    if (v.u) return /[원명권점장둥뿔번]$/.test(v.u);
     if (v.t === 'r') return '013678'.includes(String(v.b).slice(-1));
     if (v.f === 'p') return false;
     const s = v.f === 'f' && v.d !== 1 ? String(v.n % v.d) : qText(v, false);
