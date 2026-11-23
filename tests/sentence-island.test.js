@@ -36,7 +36,7 @@ test('only fully covered units open (shared sentences do not open a 1-sentence u
 
 test('ensure fills a fresh save', () => {
   const S = C.ensure({});
-  assert.deepEqual(J(S.sent), {stamps:0, last:'', daily:'', learned:{}, played:0});
+  assert.deepEqual(J(S.sent), {stamps:0, last:'', daily:'', learned:{}, played:0, mission:{day:'', done:[]}});
 });
 
 test('pool: first unit when nothing is cleared, otherwise cleared units', () => {
@@ -218,4 +218,35 @@ test('orderLong mode: long sentences of cleared chapters, all kmake', () => {
   assert.equal(r.length, 6);
   assert.ok(r.every(x => x.t === 'kmake' && x.s.long && x.s.ch === 1));
   assert.deepEqual(J(C.reward('orderLong', true)), J(C.reward('long', true)));
+});
+
+// ---------- 💮 오늘의 도장 미션 ----------
+test('mission: stamp only after every open menu is finished today', () => {
+  const S = C.ensure({stages:{}});
+  assert.deepEqual(J(C.missions(S).map(m => m.mode)), ['read','make','challenge','order']);   // 긴 문장 메뉴는 잠겨서 빠져요
+  let r = C.finishMission(S, 'read', 'd1');
+  assert.deepEqual(J(r), {mission:true, left:3, total:4, stamp:false, full:false});
+  C.finishMission(S, 'read', 'd1');                       // 같은 메뉴 두 번은 한 번으로
+  assert.deepEqual(J(C.missionDone(S, 'd1')), ['read']);
+  C.finishMission(S, 'make', 'd1'); C.finishMission(S, 'challenge', 'd1');
+  assert.equal(S.sent.stamps, 0);
+  r = C.finishMission(S, 'order', 'd1');
+  assert.ok(r.stamp); assert.equal(r.left, 0); assert.equal(S.sent.stamps, 1);
+  assert.ok(C.doneToday(S, 'd1'));
+  assert.ok(!C.finishMission(S, 'make', 'd1').stamp);      // 하루 한 번만
+  assert.equal(S.sent.stamps, 1);
+  // 다음 날은 처음부터
+  assert.deepEqual(J(C.missionDone(S, 'd2')), []);
+  assert.equal(C.finishMission(S, 'read', 'd2').left, 3);
+});
+
+test('mission: long menus join once a chapter is cleared; daily mix is not a mission', () => {
+  const st = {}; CHAPTERS[0].stages.forEach(id => st[id] = {stars:1});
+  const S = C.ensure({stages:st});
+  assert.equal(C.missions(S).length, 6);
+  const r = C.finishMission(S, 'daily', 'd1');
+  assert.equal(r.mission, false); assert.equal(r.left, 6);
+  ['read','make','challenge','long','order'].forEach(m => C.finishMission(S, m, 'd1'));
+  assert.equal(S.sent.stamps, 0);
+  assert.ok(C.finishMission(S, 'orderLong', 'd1').stamp);
 });

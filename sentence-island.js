@@ -18,6 +18,11 @@ const css = `
 #sisland .today b{font-size:26px;}
 #sisland .today small{font-size:18px;color:var(--muted);}
 #sisland .today .btn{margin-top:6px;}
+#sisland .mchips{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;}
+#sisland .mchip{font-size:15px;padding:4px 10px;border-radius:12px;background:#f1f5f9;color:#64748b;}
+#sisland .mchip.on{background:#dcfce7;color:#15803d;}
+#sisland .sbox button{position:relative;}
+#sisland .sbox button.mdone::after{content:'✅';position:absolute;top:-10px;right:-6px;font-size:22px;}
 #sisland .modes{display:flex;gap:12px;}
 #sisland .smode{flex:1;border:0;border-radius:22px;padding:16px 8px;color:#fff;font-size:24px;box-shadow:0 6px 0 rgba(0,0,0,.2);}
 #sisland .smode:active{transform:translateY(3px);box-shadow:0 3px 0 rgba(0,0,0,.2);}
@@ -108,7 +113,7 @@ add('sisland', 'sisl', `<div class="sbar">
   <h1 class="stitle">💬 영어 문장섬</h1>
   <p class="ssub">영어는 앞에서부터, 덩어리로 끊어서!</p>
   <div class="sbox">
-    <div class="today"><b id="siTodayT"></b><small id="siTodayS"></small><button class="btn green" id="siTodayBtn"></button></div>
+    <div class="today"><b id="siTodayT"></b><div class="mchips" id="siChips"></div><small id="siTodayS"></small><button class="btn green" id="siTodayBtn"></button></div>
     <div class="modes">
       <button class="smode read" id="siReadBtn"><span class="big">👀</span>해석하기<small>영어 → 앞에서부터 뜻</small></button>
       <button class="smode make" id="siMakeBtn"><span class="big">🧱</span>만들기<small>뜻 → 영어 순서로</small></button>
@@ -170,9 +175,16 @@ function open(){
   const t = today(), done = C.doneToday(S, t), b = C.board(S, t);
   $('siStreak').textContent = `🔥 ${S.streak.n}일`;
   $('siCoins').textContent = `🪙 ${S.coins}`;
-  $('siTodayT').textContent = done ? '✅ 오늘 도장 받았어요!' : '📅 오늘의 문장';
-  $('siTodayS').textContent = done ? '더 하면 코인을 더 모을 수 있어요' : `${C.ROUND}문장 · 3분이면 끝! 끝내면 도장 쾅 💮`;
-  $('siTodayBtn').textContent = done ? '▶ 한 판 더' : '▶ 시작하기';
+  // 💮 오늘의 도장 미션: 메뉴마다 한 판씩 끝내면 도장
+  const md = C.missionDone(S, t), need = C.missions(S), left = need.filter(m => !md.includes(m.mode));
+  $('siTodayT').textContent = done ? '✅ 오늘 도장 받았어요!' : '💮 오늘의 도장 미션';
+  $('siChips').innerHTML = need.map(m => `<span class="mchip${md.includes(m.mode) ? ' on' : ''}">${md.includes(m.mode) ? '✅' : '⬜'} ${m.name}</span>`).join('');
+  $('siTodayS').textContent = done ? '더 하면 코인을 더 모을 수 있어요'
+    : `${need.length - left.length} / ${need.length} 완료 · 다 끝내면 도장 쾅 💮`;
+  $('siTodayBtn').textContent = done || !left.length ? '🎲 섞어서 한 판 더' : `▶ 다음 미션: ${left[0].name}`;
+  $('siTodayBtn').onclick = () => { unlockAudio(); start(done || !left.length ? 'daily' : left[0].mode); };
+  [['siReadBtn','read'],['siMakeBtn','make'],['siChalBtn','challenge'],['siLongBtn','long'],['siOrderBtn','order'],['siOrderLongBtn','orderLong']]
+    .forEach(([id, mode]) => $(id).classList.toggle('mdone', md.includes(mode)));
   $('siStampN').textContent = `${b.on} / ${b.size}`;
   $('siLearnN').textContent = `${C.learnedCount(S)}개`;
   const lc = C.longChapters(S), lt = Object.keys(C.LONG_BY_CH).length;
@@ -183,7 +195,6 @@ function open(){
   show('sisland');
 }
 $('siHome').onclick = () => MathGame.pick();
-$('siTodayBtn').onclick = () => { unlockAudio(); start('daily'); };
 $('siReadBtn').onclick = () => { unlockAudio(); start('read'); };
 $('siMakeBtn').onclick = () => { unlockAudio(); start('make'); };
 $('siChalBtn').onclick = () => { unlockAudio(); start('challenge'); };
@@ -378,17 +389,18 @@ function finish(){
   G.coins += bonus; S.coins += bonus;
   S.sent.played++;
   let stampMsg = '', fresh = false;
-  if (G.mode === 'daily'){
-    const r = C.finishDaily(S, today());
-    if (r.stamp){
-      fresh = true; G.coins += 5; S.coins += 5;
-      stampMsg = '💮 오늘의 도장 쾅! +🪙5';
-      if (r.full){ G.coins += 30; S.coins += 30; stampMsg += ' · 🎁 도장판 완성 보너스 +🪙30!'; }
-    }
+  // 💮 오늘의 도장 미션: 이 메뉴를 끝낸 것으로 표시하고, 모두 끝냈으면 도장
+  const r = C.finishMission(S, G.mode, today());
+  if (r.stamp){
+    fresh = true; G.coins += 5; S.coins += 5;
+    stampMsg = '🎉 오늘의 미션 모두 완료! 💮 도장 쾅! +🪙5';
+    if (r.full){ G.coins += 30; S.coins += 30; stampMsg += ' · 🎁 도장판 완성 보너스 +🪙30!'; }
+  } else if (r.mission && r.left > 0){
+    stampMsg = `✅ 미션 하나 완료! 도장까지 ${r.left}개 남았어요`;
   }
   touchStreak(); save();
   sfxWin();
-  $('sirTitle').textContent = G.mode === 'daily' ? '📅 오늘의 문장 끝!' : G.mode === 'read' ? '👀 해석하기 끝!' : G.mode === 'challenge' ? '🏆 도전 만들기 끝!' : G.mode === 'long' ? '📜 긴 문장 끝!' : G.mode === 'order' ? '🔀 순서 바꾸기 끝!' : G.mode === 'orderLong' ? '🔀 긴 문장 순서 바꾸기 끝!' : '🧱 만들기 끝!';
+  $('sirTitle').textContent = G.mode === 'daily' ? '🎲 섞어서 한 판 끝!' : G.mode === 'read' ? '👀 해석하기 끝!' : G.mode === 'challenge' ? '🏆 도전 만들기 끝!' : G.mode === 'long' ? '📜 긴 문장 끝!' : G.mode === 'order' ? '🔀 순서 바꾸기 끝!' : G.mode === 'orderLong' ? '🔀 긴 문장 순서 바꾸기 끝!' : '🧱 만들기 끝!';
   $('sirStars').innerHTML = [0, 1, 2].map(i => `<span>${i < stars ? '⭐' : '☆'}</span>`).join('');
   $('sirStats').innerHTML = `<span class="pill">✨ 한 번에 ${G.list.length - G.unclean}/${G.list.length}</span><span class="pill">🪙 +${G.coins}</span><span class="pill">XP +${G.xp}</span>`;
   $('sirStamp').style.display = stampMsg ? 'block' : 'none';

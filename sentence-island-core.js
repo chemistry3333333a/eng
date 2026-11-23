@@ -8,7 +8,7 @@
 const SentIsland = (() => {
   const ROUND = 6;
   const TYPES = {
-    daily: ['read', 'make', 'read', 'make', 'read', 'make'],   // 오늘의 문장: 해석 ↔ 만들기 번갈아
+    daily: ['read', 'make', 'read', 'make', 'read', 'make'],   // 🎲 섞어서 한 판(미션 다 끝낸 뒤): 해석 ↔ 만들기 번갈아
     read:  Array(ROUND).fill('read'),
     make:  Array(ROUND).fill('make'),
     challenge: Array(ROUND).fill('make'),   // 🏆 도전 만들기: 영어 순서 뜻 힌트 없이 (화면에서 숨겨요)
@@ -60,6 +60,7 @@ const SentIsland = (() => {
     if (typeof d.daily !== 'string') d.daily = '';
     if (!d.learned || typeof d.learned !== 'object') d.learned = {};
     if (typeof d.played !== 'number') d.played = 0;
+    if (!d.mission || typeof d.mission !== 'object' || !Array.isArray(d.mission.done)) d.mission = {day:'', done:[]};
     return S;
   }
 
@@ -115,7 +116,7 @@ const SentIsland = (() => {
   function learn(S, en, clean){ ensure(S); if (clean) S.sent.learned[en] = (S.sent.learned[en] || 0) + 1; }
   const learnedCount = S => Object.keys((S.sent || {}).learned || {}).filter(k => S.sent.learned[k] > 0).length;
 
-  // 오늘의 문장을 끝냈을 때 도장: 하루에 한 번만
+  // 도장 찍기 (finishMission 이 오늘의 미션을 모두 끝냈을 때 불러요): 하루에 한 번만
   function finishDaily(S, today){
     ensure(S);
     const d = S.sent;
@@ -132,6 +133,36 @@ const SentIsland = (() => {
   }
   const doneToday = (S, today) => !!S.sent && S.sent.daily === today;
 
+  // ---------- 💮 오늘의 도장 미션: 메뉴마다 한 판씩 끝내면 도장 ----------
+  // 긴 문장 메뉴(long, orderLong)는 열린 장이 있을 때만 미션에 들어가요
+  const MISSIONS = [
+    {mode:'read',      name:'👀 해석하기'},
+    {mode:'make',      name:'🧱 만들기'},
+    {mode:'challenge', name:'🏆 도전 만들기'},
+    {mode:'long',      name:'📜 긴 문장',            needLong:true},
+    {mode:'order',     name:'🔀 순서 바꾸기'},
+    {mode:'orderLong', name:'🔀 긴 문장 순서 바꾸기', needLong:true},
+  ];
+  const missions = S => { const open = longChapters(S).length > 0; return MISSIONS.filter(m => !m.needLong || open); };
+  function missionDone(S, today){
+    ensure(S);
+    const m = S.sent.mission;
+    return m.day === today ? m.done.slice() : [];
+  }
+  // 한 판을 끝냈을 때: 그 메뉴를 오늘 끝낸 것으로 표시하고, 미션을 모두 끝냈으면 도장 (하루 한 번)
+  function finishMission(S, mode, today){
+    ensure(S);
+    const m = S.sent.mission;
+    if (m.day !== today){ m.day = today; m.done = []; }
+    const isMission = MISSIONS.some(x => x.mode === mode);
+    if (isMission && !m.done.includes(mode)) m.done.push(mode);
+    const need = missions(S);
+    const left = need.filter(x => !m.done.includes(x.mode));
+    const r = {mission:isMission, left:left.length, total:need.length, stamp:false, full:false};
+    if (!left.length){ const st = finishDaily(S, today); r.stamp = st.stamp; r.full = st.full; }
+    return r;
+  }
+
   return {ROUND, TYPES, BOARD, reward, overlap, LONG, LONG_BY_CH, longChapters, longPool, UNITS, BY_UNIT, ALL, gloss, ensure, openUnits, pool, pick, choices, shuffleBlocks,
-    stars, learn, learnedCount, finishDaily, board, doneToday};
+    stars, learn, learnedCount, finishDaily, board, doneToday, MISSIONS, missions, missionDone, finishMission};
 })();
