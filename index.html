@@ -392,6 +392,8 @@ button{font-family:inherit;color:inherit;cursor:pointer;touch-action:manipulatio
 <script src="cloud.js"></script>
 <script src="words.js"></script>
 <script src="sentences.js"></script>
+<script src="sentence-island-data.js"></script>
+<script src="sentence-island-core.js"></script>
 <script src="items.js"></script>
 <script src="avatar-art.js"></script>
 <script src="avatar.js"></script>
@@ -426,7 +428,7 @@ const KEY = 'wordisland_save_v1';
 /* ================== 저장 ================== */
 let S = null;
 function freshSave(name){
-  return MathStages.ensure(Avatar.ensure({v:1, name, xp:0, coins:0, stages:{}, words:{}, streak:{n:0,last:''}, settings:{rate:0.85}, session:null, parrot:{best:0,played:0}}));
+  return SentIsland.ensure(MathStages.ensure(Avatar.ensure({v:1, name, xp:0, coins:0, stages:{}, words:{}, streak:{n:0,last:''}, settings:{rate:0.85}, session:null, parrot:{best:0,played:0}})));
 }
 // 로그인한 사람(USER)의 기록은 기기 사본(cacheKey)에 바로, 클라우드에는 가끔 올려요
 let USER = null, flushTimer = null, flushing = null;
@@ -574,9 +576,10 @@ function renderHome(){
   if (!S){ showBox('loadingBox'); return; }
   $('helloTxt').textContent = `안녕, ${S.name}! 🔥 ${S.streak.n}일째 · Lv.${level()}`;
   $('continueBtn').textContent = (S.session || (S.math && S.math.session)) ? '▶ 하던 게임 이어하기' : '▶ 이어하기';
+  if (window.MathGame){ MathGame.pick(); return; }   // 로그인되면 바로 메인 화면(섬 고르기)으로
   showBox('oldUser');
 }
-const ensureSave = s => MathStages.ensure(Avatar.ensure(s));
+const ensureSave = s => SentIsland.ensure(MathStages.ensure(Avatar.ensure(s)));
 let pendingName = '', sessionSeq = 0;
 // 로그인되면 기기 사본과 클라우드 중 알맞은 기록을 골라 시작해요
 async function startSession(user){
@@ -982,7 +985,7 @@ $('restoreBtn').onclick = async () => {
   try { data = decodeSave($('backupIn').value); if (!data || !data.name || !data.words) throw 0; }
   catch(e){ toast('코드가 올바르지 않아요 😢'); return; }
   if (!await askConfirm(`'${data.name}'의 기록으로 바꿀까요?`)) return;
-  S = MathStages.ensure(Avatar.ensure(data)); save(); flushCloud(); $('setModal').classList.remove('on'); (S.mode === 'math' ? MathGame.map() : renderMap()); toast('복구 완료! ✅');
+  S = ensureSave(data); save(); flushCloud(); $('setModal').classList.remove('on'); (S.mode === 'math' ? MathGame.map() : renderMap()); toast('복구 완료! ✅');
 };
 $('resetBtn').onclick = async () => {
   if (!await askConfirm('정말 처음부터 다시 할까요? 모든 기록이 지워져요!')) return;
@@ -1196,5 +1199,6 @@ try {
 <script src="math-hint.js"></script>
 <script src="math-game.js"></script>
 <script src="sentence-game.js"></script>
+<script src="sentence-island.js"></script>
 </body>
 </html>
