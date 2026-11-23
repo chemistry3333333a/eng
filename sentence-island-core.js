@@ -59,12 +59,16 @@ const SentIsland = (() => {
     return types.map((t, i) => ({t, s:p[i % p.length]}));
   }
 
+  // 한 뜻이 다른 뜻을 품고 있으면(먹어요 ↔ 점심을 먹어요, ~이에요 ↔ 나는 ~이에요) 오답 보기로 쓰지 않아요
+  const norm = g => g.replace(/\(.*?\)/g, '').replace(/[~?!.,\s]/g, '');
+  const overlap = (a, b) => { const x = norm(a), y = norm(b); return !!x && !!y && (x.includes(y) || y.includes(x)); };
+
   // 해석하기 보기: 정답 뜻 + 다른 문장의 같은 자리 뜻 2개
   // 영어 덩어리가 같은 뜻(is ↔ is)이나 같은 글자의 뜻은 빼서 헷갈리지 않게 해요
   function choices(s, i, rnd = Math.random, n = 3){
     const right = s.gloss[i], en = s.blocks[i].toLowerCase();
     const close = (typeof SENT_CLOSE !== 'undefined' ? SENT_CLOSE : []).find(g => g.includes(right)) || [];
-    const ok = (o, j) => o.blocks[j].toLowerCase() !== en && o.gloss[j] !== right && !close.includes(o.gloss[j]);
+    const ok = (o, j) => o.blocks[j].toLowerCase() !== en && o.gloss[j] !== right && !close.includes(o.gloss[j]) && !overlap(o.gloss[j], right);
     const seen = new Set([right]), out = [];
     const take = list => { for (const [o, j] of mix(list, rnd)){ if (out.length >= n - 1) break; const g = o.gloss[j]; if (!seen.has(g) && ok(o, j)){ seen.add(g); out.push(g); } } };
     take(ALL.filter(o => o.blocks.length > i).map(o => [o, i]));                       // 같은 자리
@@ -102,6 +106,6 @@ const SentIsland = (() => {
   }
   const doneToday = (S, today) => !!S.sent && S.sent.daily === today;
 
-  return {ROUND, TYPES, BOARD, reward, UNITS, BY_UNIT, ALL, gloss, ensure, openUnits, pool, pick, choices, shuffleBlocks,
+  return {ROUND, TYPES, BOARD, reward, overlap, UNITS, BY_UNIT, ALL, gloss, ensure, openUnits, pool, pick, choices, shuffleBlocks,
     stars, learn, learnedCount, finishDaily, board, doneToday};
 })();

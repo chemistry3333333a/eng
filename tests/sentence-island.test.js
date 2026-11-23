@@ -21,8 +21,8 @@ test('every gloss matches a word-island sentence and its blocks', () => {
   }
 });
 
-test('chapter 1~3 units are all covered', () => {
-  for (const id of CHAPTERS.slice(0, 3).flatMap(c => c.stages)){
+test('every chapter unit is covered', () => {
+  for (const id of CHAPTERS.flatMap(c => c.stages)){
     assert.equal(C.BY_UNIT[id] && C.BY_UNIT[id].length, STAGE_SENTENCES[id].length, `unit ${id}`);
   }
   assert.equal(C.UNITS[0], CHAPTERS[0].stages[0]);
@@ -30,7 +30,8 @@ test('chapter 1~3 units are all covered', () => {
 
 test('only fully covered units open (shared sentences do not open a 1-sentence unit)', () => {
   for (const id of C.UNITS) assert.ok(C.BY_UNIT[id].length >= C.ROUND, `unit ${id}`);
-  assert.deepEqual(J(C.openUnits({stages:{25:{stars:3}}})), [C.UNITS[0]]);
+  assert.deepEqual(J(C.openUnits({stages:{25:{stars:3}}})), [25]);
+  assert.equal(C.UNITS.length, CHAPTERS.reduce((n, c) => n + c.stages.length, 0));
 });
 
 test('ensure fills a fresh save', () => {
@@ -63,6 +64,8 @@ test('choices: 3 different meanings with the right one, no same-English chunk', 
       assert.equal(c.length, 3, `${s.en} #${i}`);
       assert.equal(new Set(c).size, 3);
       assert.ok(c.includes(s.gloss[i]));
+      // 정답 뜻을 품거나 정답에 들어 있는 뜻은 오답으로 안 나와요
+      assert.ok(c.filter(x => x !== s.gloss[i]).every(x => !C.overlap(x, s.gloss[i])), `${s.en} #${i}: ${c}`);
       // 오답 뜻이 같은 영어 덩어리에서 오지 않아요 (is 는 늘 "~이에요" 라 헷갈려요)
       for (const g of c.filter(x => x !== s.gloss[i])){
         const from = C.ALL.flatMap(o => o.blocks.map((bb, j) => [bb, o.gloss[j]])).filter(([, gg]) => gg === g);
