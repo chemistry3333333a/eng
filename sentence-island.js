@@ -116,7 +116,7 @@ add('sisland', 'sisl', `<div class="sbar">
     <button class="schal" id="siChalBtn">🏆 도전 만들기 <small>영어 순서 뜻 힌트 없이! · 보상 UP</small></button>
     <button class="slong" id="siLongBtn"></button>
     <div class="korrow">
-      <button class="skor" id="siOrderBtn">🔀 순서 바꾸기 <small>짧은 문장 · 1장</small></button>
+      <button class="skor" id="siOrderBtn">🔀 순서 바꾸기 <small>짧은 문장 · 깬 단원</small></button>
       <button class="skor long" id="siOrderLongBtn"></button>
     </div>
     <div class="sinfo">
