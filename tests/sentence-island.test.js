@@ -138,11 +138,11 @@ test('daily stamp: once a day, full board every 7', () => {
 const LONG = vm.runInContext('LONG_SENTENCES', ctx);
 const SHORT = new Set(Object.values(STAGE_SENTENCES).flat().map(x => x.en));
 
-test('long sentences: 12 per chapter, well-formed', () => {
+test('long sentences: 24 per chapter, well-formed', () => {
   assert.equal(Object.keys(LONG).length, CHAPTERS.length);
   const seen = new Set();
   for (const c of Object.keys(LONG)){
-    assert.equal(LONG[c].length, 12, `chapter ${c}`);
+    assert.equal(LONG[c].length, 24, `chapter ${c}`);
     for (const [en, ko, b, g] of LONG[c]){
       const blocks = b.split('|'), gloss = g.split('|'), body = en.replace(/[.!?]$/, '');
       assert.match(en, /[.!?]$/, en);
@@ -156,7 +156,7 @@ test('long sentences: 12 per chapter, well-formed', () => {
       assert.ok(!seen.has(en) && !SHORT.has(en), `${en}: not duplicated`); seen.add(en);
     }
   }
-  assert.equal(C.LONG.length, 12 * CHAPTERS.length);
+  assert.equal(C.LONG.length, 24 * CHAPTERS.length);
 });
 
 test('long sentences open per cleared chapter', () => {

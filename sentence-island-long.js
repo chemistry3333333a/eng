@@ -1,5 +1,5 @@
 /* =====================================================================
-   워드 아일랜드 · 영어 문장섬 📜 긴 문장 (장마다 12문장)
+   워드 아일랜드 · 영어 문장섬 📜 긴 문장 (장마다 24문장)
    - 형식: [영어 문장, 자연스러운 한국어, 영어 덩어리('|'), 덩어리 뜻('|')]
      · 덩어리를 띄어쓰기로 이으면 영어 문장에서 끝 문장부호를 뺀 것과 같아야 해요
      · 뜻은 덩어리 수·순서와 똑같이, 영어 어순 그대로 적어요 (8~14단어, 4~7덩어리)
@@ -20,6 +20,19 @@ const LONG_SENTENCES = {
     ['I say good morning to my teacher, and she smiles.', '나는 선생님께 좋은 아침이라고 인사하고, 선생님은 웃어요.', 'I|say good morning|to my teacher,|and she smiles', '나는|좋은 아침이라고 말해요|내 선생님께,|그리고 선생님은 웃어요'],
     ['I wear a hat at the beach because the sun is hot.', '나는 해가 뜨거워서 해변에서 모자를 써요.', 'I|wear a hat|at the beach|because the sun|is hot', '나는|모자를 써요|해변에서|왜냐하면 해가|뜨거워서'],
     ['The cat can jump very high, so I put my cup in the box.', '그 고양이는 아주 높이 뛸 수 있어서, 나는 내 컵을 상자 안에 넣어요.', 'The cat|can jump very high,|so I put|my cup|in the box', '그 고양이는|아주 높이 뛸 수 있어요,|그래서 나는 넣어요|내 컵을|상자 안에'],
+    // 더한 문장
+    ['The big white cow drinks water on the farm.', '그 크고 하얀 소는 농장에서 물을 마셔요.', 'The big white cow|drinks|water|on the farm', '그 크고 하얀 소는|마셔요|물을|농장에서'],
+    ['There are seven purple grapes on my plate at lunch.', '점심 때 내 접시 위에 보라색 포도 일곱 알이 있어요.', 'There are|seven purple grapes|on my plate|at lunch', '있어요|보라색 포도 일곱 알이|내 접시 위에|점심 때'],
+    ['My mother and I cut a big watermelon in the kitchen.', '엄마와 나는 부엌에서 큰 수박을 잘라요.', 'My mother and I|cut|a big watermelon|in the kitchen', '엄마와 나는|잘라요|큰 수박을|부엌에서'],
+    ['The pig has a pink nose and a short tail.', '그 돼지는 분홍색 코와 짧은 꼬리를 가지고 있어요.', 'The pig|has|a pink nose|and a short tail', '그 돼지는|가지고 있어요|분홍색 코를|그리고 짧은 꼬리를'],
+    ['My grandfather walks with his black dog every evening.', '할아버지는 매일 저녁 검은 개와 함께 산책해요.', 'My grandfather|walks|with his black dog|every evening', '할아버지는|산책해요|그의 검은 개와 함께|매일 저녁'],
+    ['I like to eat rice and eggs with my family.', '나는 우리 가족과 함께 밥과 달걀 먹는 것을 좋아해요.', 'I|like|to eat rice and eggs|with my family', '나는|좋아해요|밥과 달걀 먹는 것을|우리 가족과 함께'],
+    ['Mom, please give me a cookie and a cup of juice.', '엄마, 저에게 쿠키 하나와 주스 한 컵을 주세요.', 'Mom,|please give me|a cookie|and a cup of juice', '엄마,|저에게 주세요|쿠키 하나를|그리고 주스 한 컵을'],
+    ["The clock on the wall says it is eight o'clock.", '벽에 있는 시계가 여덟 시라고 알려 줘요.', "The clock|on the wall|says|it is eight o'clock", '그 시계는|벽에 있는|알려 줘요|여덟 시라고'],
+    ['I can stand on one leg and touch my nose with my hand.', '나는 한 다리로 서서 손으로 코를 만질 수 있어요.', 'I|can stand|on one leg|and touch my nose|with my hand', '나는|설 수 있어요|한 다리로|그리고 내 코를 만져요|내 손으로'],
+    ['My brother does not like lemons because they are very sour.', '내 남동생은 레몬이 아주 시어서 좋아하지 않아요.', 'My brother|does not like|lemons|because they are|very sour', '내 남동생은|좋아하지 않아요|레몬을|왜냐하면 그것들은 ~이라서|아주 신'],
+    ['I say thanks to my aunt because she gives me a sweet peach.', '이모가 달콤한 복숭아를 줘서 나는 이모에게 고맙다고 말해요.', 'I|say thanks|to my aunt|because she gives me|a sweet peach', '나는|고맙다고 말해요|이모에게|왜냐하면 이모가 나에게 줘서|달콤한 복숭아를'],
+    ['Welcome to my house, please sit down and have some strawberry cake.', '우리 집에 온 걸 환영해요, 앉아서 딸기 케이크를 좀 드세요.', 'Welcome|to my house,|please sit down|and have|some strawberry cake', '환영해요|우리 집에 온 것을,|앉으세요|그리고 드세요|딸기 케이크를 좀'],
   ],
   // ---------- 2장 · 동물 숲 ----------
   2: [
@@ -35,6 +48,19 @@ const LONG_SENTENCES = {
     ['A busy bee flies from flower to flower in the garden.', '바쁜 벌 한 마리가 정원에서 이 꽃 저 꽃으로 날아다녀요.', 'A busy bee|flies|from flower to flower|in the garden', '바쁜 벌 한 마리가|날아다녀요|이 꽃에서 저 꽃으로|정원에서'],
     ['The parrot can say hello because my brother teaches it every day.', '오빠가 매일 가르쳐 주어서 그 앵무새는 안녕이라고 말할 수 있어요.', 'The parrot|can say hello|because my brother|teaches it|every day', '그 앵무새는|안녕이라고 말할 수 있어요|왜냐하면 내 오빠가|그것을 가르쳐서|매일'],
     ['The train is very fast, so we can see Grandma before lunch.', '기차는 아주 빨라서, 우리는 점심 전에 할머니를 볼 수 있어요.', 'The train|is very fast,|so we can see|Grandma|before lunch', '그 기차는|아주 빨라요,|그래서 우리는 볼 수 있어요|할머니를|점심 전에'],
+    // 더한 문장
+    ['A yellow duck and her babies walk to the pond after the rain.', '노란 오리와 아기 오리들이 비가 온 뒤에 연못으로 걸어가요.', 'A yellow duck and her babies|walk|to the pond|after the rain', '노란 오리와 아기 오리들이|걸어가요|연못으로|비가 온 뒤에'],
+    ['My dad makes a big sandwich with tomato and cheese.', '아빠는 토마토와 치즈로 큰 샌드위치를 만들어요.', 'My dad|makes|a big sandwich|with tomato and cheese', '아빠는|만들어요|큰 샌드위치를|토마토와 치즈로'],
+    ['There is a red crab under the rock on the beach.', '해변의 바위 밑에 빨간 게 한 마리가 있어요.', 'There is|a red crab|under the rock|on the beach', '있어요|빨간 게 한 마리가|바위 밑에|해변에서'],
+    ['I wear my new shoes and red socks to the party.', '나는 파티에 새 신발과 빨간 양말을 신고 가요.', 'I|wear|my new shoes and red socks|to the party', '나는|신어요|내 새 신발과 빨간 양말을|파티에'],
+    ['The kangaroo can jump very high with its long legs.', '그 캥거루는 긴 다리로 아주 높이 뛸 수 있어요.', 'The kangaroo|can jump|very high|with its long legs', '그 캥거루는|뛸 수 있어요|아주 높이|그것의 긴 다리로'],
+    ['I ride my bike to the park on sunny days.', '나는 맑은 날에 공원까지 자전거를 타요.', 'I|ride my bike|to the park|on sunny days', '나는|내 자전거를 타요|공원까지|맑은 날에'],
+    ['The owl sleeps in the day and flies at night.', '그 부엉이는 낮에 자고 밤에 날아요.', 'The owl|sleeps|in the day|and flies|at night', '그 부엉이는|자요|낮에|그리고 날아요|밤에'],
+    ['I want a mango and a pineapple from the fruit store.', '나는 과일 가게에서 망고 하나와 파인애플 하나를 원해요.', 'I|want|a mango and a pineapple|from the fruit store', '나는|원해요|망고 하나와 파인애플 하나를|과일 가게에서'],
+    ['My sister is afraid of the big spider, but she likes the butterfly.', '내 언니는 그 큰 거미를 무서워하지만, 그 나비는 좋아해요.', 'My sister|is afraid of the big spider,|but she likes|the butterfly', '내 언니는|그 큰 거미를 무서워해요,|하지만 그녀는 좋아해요|그 나비를'],
+    ['Please do not give candy to the goats and sheep at the farm.', '농장에서 염소와 양에게 사탕을 주지 마세요.', 'Please do not give|candy|to the goats and sheep|at the farm', '주지 마세요|사탕을|염소와 양에게|농장에서'],
+    ['The shark has sharp teeth, so the small fish swim away fast.', '상어는 이빨이 날카로워서, 작은 물고기들은 빨리 헤엄쳐 도망가요.', 'The shark|has sharp teeth,|so the small fish|swim away|fast', '그 상어는|날카로운 이빨을 가지고 있어요,|그래서 작은 물고기들은|헤엄쳐 도망가요|빨리'],
+    ['I like eating noodles with my uncle because he tells funny stories.', '삼촌이 재미있는 이야기를 해 줘서 나는 삼촌과 국수 먹는 것을 좋아해요.', 'I|like eating noodles|with my uncle|because he tells|funny stories', '나는|국수 먹는 것을 좋아해요|삼촌과 함께|왜냐하면 그가 들려줘서|재미있는 이야기를'],
   ],
   // ---------- 3장 · 학교 마을 ----------
   3: [
@@ -50,6 +76,19 @@ const LONG_SENTENCES = {
     ['They want to play on the slide, but it is too wet.', '그들은 미끄럼틀에서 놀고 싶지만, 그것은 너무 젖어 있어요.', 'They|want|to play on the slide,|but it is|too wet', '그들은|원해요|미끄럼틀에서 노는 것을,|하지만 그것은 ~이에요|너무 젖은'],
     ['I look at the calendar every morning because my birthday is coming.', '내 생일이 다가오고 있어서 나는 매일 아침 달력을 봐요.', 'I|look at the calendar|every morning|because my birthday|is coming', '나는|달력을 봐요|매일 아침|왜냐하면 내 생일이|다가오고 있어서'],
     ['My father cannot find his phone, so we look under the bed together.', '아빠가 전화기를 찾을 수 없어서, 우리는 함께 침대 밑을 살펴봐요.', 'My father|cannot find|his phone,|so we look|under the bed|together', '아빠는|찾을 수 없어요|그의 전화기를,|그래서 우리는 살펴봐요|침대 밑을|함께'],
+    // 더한 문장
+    ['I cut the paper into a small square with scissors.', '나는 가위로 종이를 작은 정사각형으로 잘라요.', 'I|cut|the paper|into a small square|with scissors', '나는|잘라요|그 종이를|작은 정사각형으로|가위로'],
+    ['There are twenty pens in the box on my desk.', '내 책상 위 상자 안에 펜 스무 자루가 있어요.', 'There are|twenty pens|in the box|on my desk', '있어요|펜 스무 자루가|상자 안에|내 책상 위의'],
+    ['My friend and I do a big puzzle at my house.', '내 친구와 나는 우리 집에서 큰 퍼즐을 맞춰요.', 'My friend and I|do|a big puzzle|at my house', '내 친구와 나는|맞춰요|큰 퍼즐을|우리 집에서'],
+    ['The tall tree in the garden has many white flowers.', '정원에 있는 키 큰 나무에는 하얀 꽃이 많아요.', 'The tall tree|in the garden|has|many white flowers', '그 키 큰 나무는|정원에 있는|가지고 있어요|많은 하얀 꽃을'],
+    ['He reads a book in bed before he goes to sleep.', '그는 자러 가기 전에 침대에서 책을 읽어요.', 'He|reads a book|in bed|before he goes to sleep', '그는|책을 읽어요|침대에서|그가 자러 가기 전에'],
+    ['We play in the snow and make a big round snowman.', '우리는 눈 속에서 놀고 크고 둥근 눈사람을 만들어요.', 'We|play|in the snow|and make|a big round snowman', '우리는|놀아요|눈 속에서|그리고 만들어요|크고 둥근 눈사람을'],
+    ['She looks in the mirror and brushes her long hair.', '그녀는 거울을 보고 긴 머리를 빗어요.', 'She|looks in the mirror|and brushes|her long hair', '그녀는|거울을 봐요|그리고 빗어요|그녀의 긴 머리를'],
+    ['Please hold my red balloon, so I can tie my shoes.', '내가 신발 끈을 묶을 수 있게 내 빨간 풍선을 잡아 주세요.', 'Please hold|my red balloon,|so I can tie|my shoes', '잡아 주세요|내 빨간 풍선을,|그래서 내가 묶을 수 있게|내 신발 끈을'],
+    ['Eleven children sit in a circle and sing a happy song.', '아이들 열한 명이 동그랗게 앉아서 신나는 노래를 불러요.', 'Eleven children|sit|in a circle|and sing|a happy song', '아이들 열한 명이|앉아요|동그랗게|그리고 불러요|신나는 노래를'],
+    ['The dark clouds come, so we run home with our kites.', '먹구름이 와서, 우리는 연을 들고 집으로 달려가요.', 'The dark clouds|come,|so we run home|with our kites', '먹구름이|와요,|그래서 우리는 집으로 달려가요|우리 연을 들고'],
+    ['I always put my key on the small table next to the door.', '나는 항상 문 옆에 있는 작은 탁자 위에 열쇠를 놓아요.', 'I|always put|my key|on the small table|next to the door', '나는|항상 놓아요|내 열쇠를|작은 탁자 위에|문 옆에 있는'],
+    ['We love making cards for our teacher because she is very kind.', '선생님이 아주 친절하셔서 우리는 선생님께 드릴 카드 만드는 것을 아주 좋아해요.', 'We|love making cards|for our teacher|because she|is very kind', '우리는|카드 만드는 것을 아주 좋아해요|우리 선생님을 위해|왜냐하면 선생님은|아주 친절하셔서'],
   ],
   // ---------- 4장 · 시간의 시계탑 ----------
   4: [
@@ -65,6 +104,19 @@ const LONG_SENTENCES = {
     ['In December, it is very cold, so we wear warm coats and hats.', '12월에는 매우 추워서 우리는 따뜻한 코트와 모자를 써요.', 'In December,|it is very cold,|so we wear|warm coats and hats', '12월에는|매우 추워요|그래서 우리는 입어요|따뜻한 코트와 모자를'],
     ['On Saturday, my dad and I wake up early to walk in the park.', '토요일에 아빠와 나는 공원에서 산책하려고 일찍 일어나요.', 'On Saturday,|my dad and I|wake up early|to walk|in the park', '토요일에|아빠와 나는|일찍 일어나요|산책하려고|공원에서'],
     ['When it was hot in July, we swam in the pool for an hour.', '7월에 더웠을 때 우리는 수영장에서 한 시간 동안 수영했어요.', 'When it was hot|in July,|we swam|in the pool|for an hour', '날씨가 더웠을 때|7월에|우리는 수영했어요|수영장에서|한 시간 동안'],
+    // 더한 문장
+    ['My cat sleeps under the table every afternoon.', '내 고양이는 매일 오후에 탁자 아래에서 자요.', 'My cat|sleeps|under the table|every afternoon', '내 고양이는|자요|탁자 아래에서|매일 오후에'],
+    ["The library opens at ten o'clock on Saturday morning.", '그 도서관은 토요일 아침 10시 정각에 문을 열어요.', "The library|opens|at ten o'clock|on Saturday morning", '그 도서관은|문을 열어요|10시 정각에|토요일 아침에'],
+    ['My mom washes the dishes in the kitchen after dinner.', '우리 엄마는 저녁밥 후에 부엌에서 설거지를 해요.', 'My mom|washes the dishes|in the kitchen|after dinner', '우리 엄마는|설거지를 해요|부엌에서|저녁밥 후에'],
+    ['We have a music class at school on Tuesday and Thursday.', '우리는 화요일과 목요일에 학교에서 음악 수업이 있어요.', 'We|have a music class|at school|on Tuesday and Thursday', '우리는|음악 수업이 있어요|학교에서|화요일과 목요일에'],
+    ['The baby cried for ten minutes because she was hungry.', '그 아기는 배가 고파서 10분 동안 울었어요.', 'The baby|cried|for ten minutes|because she was hungry', '그 아기는|울었어요|10분 동안|배가 고파서'],
+    ['There is a small bench in front of the school near my house.', '우리 집 근처 학교 앞에 작은 벤치가 있어요.', 'There is|a small bench|in front of the school|near my house', '~이 있어요|작은 벤치가|학교 앞에|우리 집 근처에'],
+    ['Which day do you like better, Monday or Friday?', '너는 월요일과 금요일 중에 어느 요일이 더 좋니?', 'Which day|do you like better,|Monday|or Friday', '어느 요일을|너는 더 좋아하니,|월요일|아니면 금요일'],
+    ['I was full after lunch, so I did not eat a snack.', '나는 점심밥을 먹고 배가 불러서 간식을 먹지 않았어요.', 'I was full|after lunch,|so I did not eat|a snack', '나는 배가 불렀어요|점심밥 후에|그래서 나는 먹지 않았어요|간식을'],
+    ['My sister and I will sing and dance at the school festival in October.', '언니와 나는 10월에 학교 축제에서 노래하고 춤출 거예요.', 'My sister and I|will sing and dance|at the school festival|in October', '언니와 나는|노래하고 춤출 거예요|학교 축제에서|10월에'],
+    ['When the weather gets cool in September, we open all the windows.', '9월에 날씨가 시원해지면 우리는 창문을 모두 열어요.', 'When the weather gets cool|in September,|we open|all the windows', '날씨가 시원해질 때|9월에|우리는 열어요|모든 창문을'],
+    ["I want to wake up at six o'clock tomorrow because I have a test.", '나는 시험이 있어서 내일 6시 정각에 일어나고 싶어요.', "I|want to wake up|at six o'clock|tomorrow|because I have a test", '나는|일어나고 싶어요|6시 정각에|내일|내가 시험이 있어서'],
+    ['The boy who stands behind me in line jumps higher than my brother.', '줄에서 내 뒤에 서 있는 소년은 우리 형보다 더 높이 뛰어요.', 'The boy|who stands behind me|in line|jumps higher|than my brother', '그 소년은|내 뒤에 서 있는|줄에서|더 높이 뛰어요|우리 형보다'],
   ],
   // ---------- 5장 · 활기찬 도시 ----------
   5: [
@@ -80,6 +132,19 @@ const LONG_SENTENCES = {
     ['When the firefighter heard the alarm, he quickly jumped into the red truck.', '소방관은 경보를 듣자 재빨리 빨간 트럭에 올라탔어요.', 'When the firefighter heard the alarm,|he|quickly jumped|into the red truck', '소방관이 경보를 들었을 때|그는|재빨리 뛰어올랐어요|빨간 트럭 안으로'],
     ['In winter, my family goes skiing in the mountains because we love snow.', '우리 가족은 눈을 좋아해서 겨울에 산으로 스키를 타러 가요.', 'In winter,|my family|goes skiing|in the mountains|because we love snow', '겨울에|우리 가족은|스키 타러 가요|산에서|우리가 눈을 좋아해서'],
     ['Go straight across the bridge, and the police station will be on your right.', '다리를 건너 똑바로 가면 오른쪽에 경찰서가 있을 거예요.', 'Go straight|across the bridge,|and the police station|will be|on your right', '똑바로 가세요|다리를 건너서|그러면 경찰서가|있을 거예요|오른쪽에'],
+    // 더한 문장
+    ['The chef cooks delicious pasta at the new restaurant.', '그 요리사는 새 식당에서 맛있는 파스타를 요리해요.', 'The chef|cooks|delicious pasta|at the new restaurant', '그 요리사는|요리해요|맛있는 파스타를|새 식당에서'],
+    ['A big helicopter flew over the airport on Sunday afternoon.', '일요일 오후에 큰 헬리콥터 한 대가 공항 위로 날아갔어요.', 'A big helicopter|flew|over the airport|on Sunday afternoon', '큰 헬리콥터 한 대가|날아갔어요|공항 위로|일요일 오후에'],
+    ['My aunt buys fresh bread at the bakery every morning.', '이모는 매일 아침 빵집에서 신선한 빵을 사요.', 'My aunt|buys fresh bread|at the bakery|every morning', '이모는|신선한 빵을 사요|빵집에서|매일 아침'],
+    ['The farmer drives a green tractor on the farm in spring.', '그 농부는 봄에 농장에서 초록색 트랙터를 몰아요.', 'The farmer|drives a green tractor|on the farm|in spring', '그 농부는|초록색 트랙터를 몰아요|농장에서|봄에'],
+    ['We waited at the bus stop for twenty minutes yesterday.', '우리는 어제 버스 정류장에서 20분 동안 기다렸어요.', 'We|waited|at the bus stop|for twenty minutes|yesterday', '우리는|기다렸어요|버스 정류장에서|20분 동안|어제'],
+    ['The scientist showed us a tiny robot at the science museum.', '그 과학자는 과학 박물관에서 우리에게 작은 로봇을 보여 줬어요.', 'The scientist|showed us|a tiny robot|at the science museum', '그 과학자는|우리에게 보여 줬어요|작은 로봇을|과학 박물관에서'],
+    ['There is a big ambulance in front of the hospital right now.', '지금 병원 앞에 큰 구급차가 있어요.', 'There is|a big ambulance|in front of the hospital|right now', '~이 있어요|큰 구급차가|병원 앞에|지금'],
+    ['Turn left at the corner, and you will see the post office.', '모퉁이에서 왼쪽으로 돌면 우체국이 보일 거예요.', 'Turn left|at the corner,|and you will see|the post office', '왼쪽으로 도세요|모퉁이에서|그러면 너는 볼 거예요|우체국을'],
+    ['We played table tennis in the gym because it was stormy.', '폭풍우가 쳐서 우리는 체육관에서 탁구를 쳤어요.', 'We|played table tennis|in the gym|because it was stormy', '우리는|탁구를 쳤어요|체육관에서|폭풍우가 쳐서'],
+    ['When summer comes, my family will go camping near the river.', '여름이 오면 우리 가족은 강 근처로 캠핑하러 갈 거예요.', 'When summer comes,|my family|will go camping|near the river', '여름이 오면|우리 가족은|캠핑하러 갈 거예요|강 근처로'],
+    ['My brother plays the drum louder than the other kids in his band.', '내 형은 밴드의 다른 아이들보다 북을 더 크게 쳐요.', 'My brother|plays the drum|louder|than the other kids|in his band', '내 형은|북을 쳐요|더 크게|다른 아이들보다|그의 밴드에 있는'],
+    ['The woman who works at the bank plays tennis with my mom every Saturday.', '은행에서 일하는 그 여자는 매주 토요일에 우리 엄마와 테니스를 쳐요.', 'The woman|who works at the bank|plays tennis|with my mom|every Saturday', '그 여자는|은행에서 일하는|테니스를 쳐요|우리 엄마와 함께|매주 토요일에'],
   ],
   // ---------- 6장 · 마음의 정원 ----------
   6: [
@@ -95,6 +160,19 @@ const LONG_SENTENCES = {
     ['The dentist told me to brush my teeth after every meal.', '치과 의사 선생님은 나에게 매 식사 후에 이를 닦으라고 말했어요.', 'The dentist|told me|to brush my teeth|after every meal', '그 치과 의사는|나에게 말했어요|이를 닦으라고|매 식사 후에'],
     ['The girl who sits next to me in class is smart and brave.', '수업 시간에 내 옆에 앉는 소녀는 똑똑하고 용감해요.', 'The girl|who sits next to me|in class|is smart and brave', '그 소녀는|내 옆에 앉는|수업 시간에|똑똑하고 용감해요'],
     ['I still remember the kind nurse who helped me when I hurt my knee.', '나는 무릎을 다쳤을 때 나를 도와준 친절한 간호사를 아직도 기억해요.', 'I still remember|the kind nurse|who helped me|when I hurt my knee', '나는 아직도 기억해요|그 친절한 간호사를|나를 도와준|내가 무릎을 다쳤을 때'],
+    // 더한 문장
+    ['My little brother has short hair and a round face.', '내 남동생은 머리카락이 짧고 얼굴이 둥글어요.', 'My little brother|has|short hair|and a round face', '내 남동생은|가지고 있어요|짧은 머리카락을|그리고 둥근 얼굴을'],
+    ['The old bag is heavy, but the new one is light.', '낡은 가방은 무겁지만, 새 가방은 가벼워요.', 'The old bag|is heavy,|but the new one|is light', '그 낡은 가방은|무거워요,|하지만 새것은|가벼워요'],
+    ['There are forty students in the music room after lunch.', '점심밥 후에 음악실에는 학생이 40명 있어요.', 'There are|forty students|in the music room|after lunch', '~이 있어요|40명의 학생이|음악실에|점심밥 후에'],
+    ['My puppy looked scared when it heard the loud thunder.', '내 강아지는 큰 천둥소리를 듣고 무서워 보였어요.', 'My puppy|looked scared|when it heard|the loud thunder', '내 강아지는|무서워 보였어요|그것이 들었을 때|큰 천둥소리를'],
+    ['I decided to build a birdhouse with my dad this weekend.', '나는 이번 주말에 아빠와 함께 새집을 만들기로 했어요.', 'I|decided to build|a birdhouse|with my dad|this weekend', '나는|만들기로 결정했어요|새집을|아빠와 함께|이번 주말에'],
+    ['My shoulder hurts because I carried a heavy box this morning.', '오늘 아침에 무거운 상자를 옮겨서 내 어깨가 아파요.', 'My shoulder hurts|because I carried|a heavy box|this morning', '내 어깨가 아파요|내가 옮겨서|무거운 상자를|오늘 아침에'],
+    ['If you have a headache, you need to rest in a quiet room.', '머리가 아프면 너는 조용한 방에서 쉬어야 해요.', 'If you have|a headache,|you need to rest|in a quiet room', '네가 있으면|두통이,|너는 쉬어야 해요|조용한 방에서'],
+    ['I was bored at home, so I played computer games with my brother.', '나는 집에서 지루해서 형과 함께 컴퓨터 게임을 했어요.', 'I was bored|at home,|so I played|computer games|with my brother', '나는 지루했어요|집에서|그래서 나는 했어요|컴퓨터 게임을|내 형과 함께'],
+    ['The boy who won the race is fast and strong like his brother.', '경주에서 이긴 그 소년은 자기 형처럼 빠르고 힘이 세요.', 'The boy|who won the race|is fast and strong|like his brother', '그 소년은|경주에서 이긴|빠르고 힘이 세요|그의 형처럼'],
+    ['The young dentist who works near my school is very kind to children.', '우리 학교 근처에서 일하는 젊은 치과 의사는 아이들에게 아주 친절해요.', 'The young dentist|who works near my school|is very kind|to children', '그 젊은 치과 의사는|우리 학교 근처에서 일하는|아주 친절해요|아이들에게'],
+    ['My cousin was surprised when fifty people came to her birthday party.', '내 사촌은 생일 파티에 50명이 와서 깜짝 놀랐어요.', 'My cousin|was surprised|when fifty people came|to her birthday party', '내 사촌은|놀랐어요|50명의 사람들이 왔을 때|그녀의 생일 파티에'],
+    ['I will never forget the funny teacher who taught us English last year.', '나는 작년에 우리에게 영어를 가르쳐 준 재미있는 선생님을 절대 잊지 않을 거예요.', 'I will never forget|the funny teacher|who taught us English|last year', '나는 절대 잊지 않을 거예요|그 재미있는 선생님을|우리에게 영어를 가르쳐 준|작년에'],
   ],
   // ---------- 7장 · 세계 여행 ----------
   7: [
@@ -110,6 +188,19 @@ const LONG_SENTENCES = {
     ['Although the curry was very spicy, my little brother ate all of it.', '카레가 아주 매웠지만, 내 남동생은 그것을 전부 먹었어요.', 'Although the curry was very spicy,|my little brother|ate|all of it', '그 카레가 아주 매웠지만|내 남동생은|먹었어요|그것을 전부'],
     ['The camel walking across the desert carries heavy bags on its back.', '사막을 가로질러 걷는 그 낙타는 등에 무거운 짐을 날라요.', 'The camel|walking across the desert|carries|heavy bags|on its back', '그 낙타는|사막을 가로질러 걷는|날라요|무거운 짐을|그것의 등에'],
     ['This is the most delicious cheese that I have ever tasted in France.', '이것은 내가 프랑스에서 맛본 치즈 중 가장 맛있는 치즈예요.', 'This is|the most delicious cheese|that I have ever tasted|in France', '이것은 ~이에요|가장 맛있는 치즈|내가 지금까지 맛본|프랑스에서'],
+    // 더한 문장
+    ['I left my passport on the sofa in the living room.', '나는 거실 소파 위에 내 여권을 두고 왔어요.', 'I|left|my passport|on the sofa|in the living room', '나는|두고 왔어요|내 여권을|소파 위에|거실 안의'],
+    ['My uncle bought two plane tickets to Canada last week.', '우리 삼촌은 지난주에 캐나다로 가는 비행기 표 두 장을 샀어요.', 'My uncle|bought|two plane tickets|to Canada|last week', '우리 삼촌은|샀어요|비행기 표 두 장을|캐나다로 가는|지난주에'],
+    ['The koala sleeps in a tall tree for most of the day.', '그 코알라는 하루의 대부분을 높은 나무에서 자요.', 'The koala|sleeps|in a tall tree|for most of the day', '그 코알라는|자요|높은 나무에서|하루의 대부분 동안'],
+    ['Please cut the fresh cheese and put it on the bread.', '신선한 치즈를 잘라서 빵 위에 올려 주세요.', 'Please cut|the fresh cheese|and put it|on the bread', '잘라 주세요|그 신선한 치즈를|그리고 그것을 올려 주세요|빵 위에'],
+    ['We are going to visit an old castle in Germany tomorrow.', '우리는 내일 독일에 있는 오래된 성을 방문할 거예요.', 'We|are going to visit|an old castle|in Germany|tomorrow', '우리는|방문할 거예요|오래된 성을|독일에 있는|내일'],
+    ['The squirrel that lives in our garden hides nuts under the rock.', '우리 정원에 사는 그 다람쥐는 바위 아래에 견과류를 숨겨요.', 'The squirrel|that lives in our garden|hides|nuts|under the rock', '그 다람쥐는|우리 정원에 사는|숨겨요|견과류를|바위 아래에'],
+    ['My brother boiled some water in the kitchen to make ramen.', '내 남동생은 라면을 만들려고 부엌에서 물을 조금 끓였어요.', 'My brother|boiled|some water|in the kitchen|to make ramen', '내 남동생은|끓였어요|물을 조금|부엌에서|라면을 만들기 위해'],
+    ['Because the lemon was so sour, my little sister made a funny face.', '레몬이 너무 셔서, 내 여동생은 웃긴 표정을 지었어요.', 'Because the lemon was so sour,|my little sister|made|a funny face', '그 레몬이 너무 셨기 때문에|내 여동생은|지었어요|웃긴 표정을'],
+    ['The seals swimming in the cold sea look happier than the hippos.', '차가운 바다에서 수영하는 물개들은 하마들보다 더 행복해 보여요.', 'The seals|swimming in the cold sea|look|happier|than the hippos', '그 물개들은|차가운 바다에서 수영하는|보여요|더 행복해|하마들보다'],
+    ['If you order the crispy chicken, you should taste the honey sauce too.', '바삭한 치킨을 주문하면, 꿀 소스도 꼭 맛봐야 해요.', 'If you order|the crispy chicken,|you should taste|the honey sauce too', '네가 주문하면|바삭한 치킨을|너는 맛봐야 해요|꿀 소스도'],
+    ['Although it was raining, the farmers worked hard in the green field.', '비가 오고 있었지만, 농부들은 초록 들판에서 열심히 일했어요.', 'Although it was raining,|the farmers|worked hard|in the green field', '비가 오고 있었지만|농부들은|열심히 일했어요|초록 들판에서'],
+    ['The palace that we visited in China was bigger than my whole village.', '우리가 중국에서 방문한 궁전은 우리 마을 전체보다 더 컸어요.', 'The palace|that we visited in China|was|bigger|than my whole village', '그 궁전은|우리가 중국에서 방문한|~이었어요|더 큰|우리 마을 전체보다'],
   ],
   // ---------- 8장 · 과학 탐험대 ----------
   8: [
@@ -125,6 +216,19 @@ const LONG_SENTENCES = {
     ['Although the experiment was difficult, the students tried again and finished it.', '실험은 어려웠지만, 학생들은 다시 노력해서 그것을 끝냈어요.', 'Although the experiment was difficult,|the students|tried again|and finished it', '그 실험은 어려웠지만|학생들은|다시 노력했어요|그리고 그것을 끝냈어요'],
     ['The writer is thinking about a special story to share with children.', '그 작가는 아이들과 나눌 특별한 이야기를 생각하고 있어요.', 'The writer|is thinking about|a special story|to share|with children', '그 작가는|생각하고 있어요|특별한 이야기를|나눌|아이들과'],
     ['The programmer who loves space is building a satellite that can find comets.', '우주를 사랑하는 그 프로그래머는 혜성을 찾을 수 있는 인공위성을 만들고 있어요.', 'The programmer|who loves space|is building|a satellite|that can find comets', '그 프로그래머는|우주를 사랑하는|만들고 있어요|인공위성을|혜성을 찾을 수 있는'],
+    // 더한 문장
+    ['The police officer helped an old man find his lost dog.', '그 경찰관은 한 할아버지가 잃어버린 개를 찾도록 도와주었어요.', 'The police officer|helped|an old man|find his lost dog', '그 경찰관은|도와주었어요|한 할아버지가|그의 잃어버린 개를 찾도록'],
+    ['My teacher will teach us how to use a telescope tonight.', '우리 선생님은 오늘 밤에 망원경 쓰는 방법을 가르쳐 주실 거예요.', 'My teacher|will teach us|how to use|a telescope|tonight', '우리 선생님은|우리에게 가르쳐 주실 거예요|사용하는 방법을|망원경을|오늘 밤에'],
+    ['We saw a beautiful rainbow over the river after the rain.', '우리는 비가 온 후에 강 위로 뜬 아름다운 무지개를 보았어요.', 'We|saw|a beautiful rainbow|over the river|after the rain', '우리는|보았어요|아름다운 무지개를|강 위로|비가 온 후에'],
+    ["The mechanic changed the old battery in my dad's car.", '그 정비사는 우리 아빠 차의 오래된 배터리를 바꿨어요.', "The mechanic|changed|the old battery|in my dad's car", '그 정비사는|바꿨어요|오래된 배터리를|우리 아빠 차 안의'],
+    ['Before the class starts, I often choose a book to read.', '수업이 시작하기 전에, 나는 읽을 책을 자주 골라요.', 'Before the class starts,|I|often choose|a book|to read', '수업이 시작하기 전에|나는|자주 골라요|책 한 권을|읽을'],
+    ['The artist sold her paintings to buy books for the school library.', '그 화가는 학교 도서관에 줄 책을 사려고 자기 그림들을 팔았어요.', 'The artist|sold|her paintings|to buy books|for the school library', '그 화가는|팔았어요|그녀의 그림들을|책을 사기 위해|학교 도서관을 위한'],
+    ['When the astronauts return to earth, they will share their stories.', '우주비행사들이 지구로 돌아오면, 그들은 자기 이야기를 나눌 거예요.', 'When the astronauts return to earth,|they|will share|their stories', '우주비행사들이 지구로 돌아오면|그들은|나눌 거예요|그들의 이야기를'],
+    ['Robots that understand people are becoming popular around the world.', '사람을 이해하는 로봇들이 전 세계에서 인기를 얻고 있어요.', 'Robots|that understand people|are becoming|popular|around the world', '로봇들은|사람을 이해하는|되어 가고 있어요|인기 있게|전 세계에서'],
+    ['The desert is the most dangerous place to travel because there is little water.', '사막은 물이 거의 없어서 여행하기에 가장 위험한 곳이에요.', 'The desert|is|the most dangerous place|to travel|because there is little water', '사막은|~이에요|가장 위험한 장소|여행하기에|물이 거의 없기 때문에'],
+    ['If we send a message into space, an alien might find it someday.', '우리가 우주로 메시지를 보내면, 언젠가 외계인이 그것을 찾을지도 몰라요.', 'If we send a message|into space,|an alien|might find it|someday', '우리가 메시지를 보내면|우주로|외계인이|그것을 찾을지도 몰라요|언젠가'],
+    ['The judge who knows the law well listens carefully to both people.', '법을 잘 아는 그 판사는 두 사람 모두의 말을 주의 깊게 들어요.', 'The judge|who knows the law well|listens carefully|to both people', '그 판사는|법을 잘 아는|주의 깊게 들어요|두 사람 모두의 말을'],
+    ['Learning about electricity is easier when you try a simple experiment by yourself.', '전기에 대해 배우는 것은 혼자서 간단한 실험을 해 볼 때 더 쉬워요.', 'Learning about electricity|is|easier|when you try|a simple experiment|by yourself', '전기에 대해 배우는 것은|~이에요|더 쉬운|네가 해 볼 때|간단한 실험을|혼자서'],
   ],
   // ---------- 9장 · 이야기 섬 ----------
   9: [
@@ -140,6 +244,19 @@ const LONG_SENTENCES = {
     ['Although I made a big mistake, my friend was not upset with me.', '내가 큰 실수를 했지만, 내 친구는 나에게 속상해하지 않았어요.', 'Although I made a big mistake,|my friend|was not upset|with me', '내가 큰 실수를 했지만|내 친구는|속상해하지 않았어요|나에게'],
     ['The witch living in the dark tower changed the king into a frog.', '어두운 탑에 사는 마녀가 왕을 개구리로 바꿨어요.', 'The witch|living in the dark tower|changed|the king|into a frog', '그 마녀는|어두운 탑에 사는|바꿨어요|그 왕을|개구리로'],
     ['The bravest hero in the story finally fought the monster to protect the village.', '그 이야기 속 가장 용감한 영웅은 마을을 지키기 위해 마침내 괴물과 싸웠어요.', 'The bravest hero|in the story|finally fought|the monster|to protect the village', '가장 용감한 영웅은|그 이야기 속의|마침내 싸웠어요|그 괴물과|마을을 지키기 위해'],
+    // 더한 문장
+    ['My neighbor usually walks her big dog in the park.', '우리 이웃은 보통 공원에서 큰 개를 산책시켜요.', 'My neighbor|usually walks|her big dog|in the park', '우리 이웃은|보통 산책시켜요|그녀의 큰 개를|공원에서'],
+    ['Tomorrow we will meet all our cousins at the wedding.', '내일 우리는 결혼식에서 사촌들을 모두 만날 거예요.', 'Tomorrow|we|will meet|all our cousins|at the wedding', '내일|우리는|만날 거예요|우리 사촌들 모두를|결혼식에서'],
+    ['My grandpa never forgets to light a candle on Christmas Eve.', '우리 할아버지는 크리스마스이브에 양초 켜는 것을 절대 잊지 않으세요.', 'My grandpa|never forgets|to light a candle|on Christmas Eve', '우리 할아버지는|절대 잊지 않으세요|양초 켜는 것을|크리스마스이브에'],
+    ['The new student felt shy and did not talk to anyone.', '그 새 학생은 수줍어서 아무에게도 말을 하지 않았어요.', 'The new student|felt shy|and did not talk|to anyone', '그 새 학생은|수줍음을 느꼈어요|그리고 이야기하지 않았어요|아무에게도'],
+    ['I asked my teacher a question about the English test.', '나는 선생님께 영어 시험에 대해 질문을 했어요.', 'I|asked|my teacher|a question|about the English test', '나는|여쭤봤어요|우리 선생님께|질문을|영어 시험에 대해'],
+    ['My friend who joined the photo club takes pictures of birds every weekend.', '사진 동아리에 들어간 내 친구는 주말마다 새 사진을 찍어요.', 'My friend|who joined the photo club|takes pictures|of birds|every weekend', '내 친구는|사진 동아리에 가입한|사진을 찍어요|새들의|주말마다'],
+    ['When our team finally won, we shouted happily and took a photo together.', '우리 팀이 마침내 이겼을 때, 우리는 기쁘게 소리치고 함께 사진을 찍었어요.', 'When our team finally won,|we|shouted happily|and took a photo|together', '우리 팀이 마침내 이겼을 때|우리는|기쁘게 소리쳤어요|그리고 사진을 찍었어요|함께'],
+    ['The little dragon was worried because it could not fly high in the sky.', '그 아기 용은 하늘 높이 날 수 없어서 걱정했어요.', 'The little dragon|was worried|because it could not fly|high in the sky', '그 아기 용은|걱정했어요|그것이 날 수 없었기 때문에|하늘 높이'],
+    ['If you have a problem, you should tell someone who can help you.', '문제가 있으면, 너를 도와줄 수 있는 누군가에게 말해야 해요.', 'If you have a problem,|you should tell|someone|who can help you', '네게 문제가 있으면|너는 말해야 해요|누군가에게|너를 도와줄 수 있는'],
+    ['Although the ghost looked scary, it only wanted to make friends.', '그 유령은 무서워 보였지만, 그저 친구를 사귀고 싶었을 뿐이에요.', 'Although the ghost looked scary,|it|only wanted|to make friends', '그 유령은 무서워 보였지만|그것은|단지 원했어요|친구를 사귀기를'],
+    ['Learning a new language is harder than I thought, but it is fun.', '새 언어를 배우는 것은 생각보다 더 어렵지만, 재미있어요.', 'Learning a new language|is|harder|than I thought,|but it is fun', '새 언어를 배우는 것은|~이에요|더 어려운|내가 생각했던 것보다|하지만 그것은 재미있어요'],
+    ['The fairy who granted my wish told me to stay calm during the test.', '내 소원을 들어준 요정은 시험 동안 차분하게 있으라고 나에게 말해 주었어요.', 'The fairy|who granted my wish|told me|to stay calm|during the test', '그 요정은|내 소원을 들어준|나에게 말해 주었어요|차분하게 있으라고|시험 동안'],
   ],
   // ---------- 10장 · 지혜의 산 ----------
   10: [
@@ -155,6 +272,19 @@ const LONG_SENTENCES = {
     ['The famous singer who visited our town was kinder than I expected.', '우리 마을을 방문한 그 유명한 가수는 내가 예상한 것보다 더 친절했어요.', 'The famous singer|who visited our town|was kinder|than I expected', '그 유명한 가수는|우리 마을을 방문한|더 친절했어요|내가 예상한 것보다'],
     ['Although the price was expensive, my dad believed it was a perfect gift.', '가격이 비쌌지만, 아빠는 그것이 완벽한 선물이라고 믿었어요.', 'Although the price|was expensive,|my dad believed|it was a perfect gift', '비록 가격이|비쌌지만|우리 아빠는 믿었어요|그것이 완벽한 선물이라고'],
     ['The lake that we visited was the deepest and most wonderful place in Korea.', '우리가 방문한 그 호수는 한국에서 가장 깊고 가장 멋진 곳이었어요.', 'The lake|that we visited|was|the deepest and most wonderful place|in Korea', '그 호수는|우리가 방문한|~이었어요|가장 깊고 가장 멋진 장소|한국에서'],
+    // 더한 문장
+    ['Please do not kick the ball over the wall again.', '다시는 공을 담 너머로 차지 마세요.', 'Please do not kick|the ball|over the wall|again', '차지 마세요|공을|담 너머로|다시'],
+    ['We travel to Jeju Island together every spring.', '우리는 봄마다 함께 제주도로 여행해요.', 'We|travel|to Jeju Island|together|every spring', '우리는|여행해요|제주도로|함께|봄마다'],
+    ['Can you catch the coin that I throw to you?', '내가 너에게 던지는 동전을 잡을 수 있니?', 'Can you catch|the coin|that I throw|to you', '너는 잡을 수 있니|그 동전을|내가 던지는|너에게'],
+    ['The empty box in the corner is useful for my art class.', '구석에 있는 그 빈 상자는 내 미술 수업에 쓸모 있어요.', 'The empty box|in the corner|is useful|for my art class', '그 빈 상자는|구석에 있는|쓸모 있어요|내 미술 수업에'],
+    ['My sister is busy today, so she is not free to play with me.', '우리 언니는 오늘 바빠서 나와 놀 시간이 없어요.', 'My sister|is busy today,|so she is not free|to play with me', '우리 언니는|오늘 바빠요|그래서 언니는 한가하지 않아요|나와 놀기에'],
+    ['Wet socks feel terrible, so I always keep dry ones in my bag.', '젖은 양말은 기분이 끔찍해서, 나는 항상 가방에 마른 양말을 넣어 다녀요.', 'Wet socks|feel terrible,|so I always keep|dry ones|in my bag', '젖은 양말은|끔찍한 느낌이에요|그래서 나는 항상 보관해요|마른 것을|내 가방에'],
+    ['I believe that drinking water is better than drinking soda.', '나는 물을 마시는 것이 탄산음료를 마시는 것보다 더 좋다고 믿어요.', 'I believe|that drinking water|is better|than drinking soda', '나는 믿어요|물을 마시는 것이|더 좋다고|탄산음료를 마시는 것보다'],
+    ['The girl drawing a picture by the window is my best friend.', '창가에서 그림을 그리고 있는 그 소녀는 내 가장 친한 친구예요.', 'The girl|drawing a picture|by the window|is|my best friend', '그 소녀는|그림을 그리고 있는|창가에서|~이에요|내 가장 친한 친구'],
+    ['There was a big sale, so many people waited in line.', '큰 할인 판매가 있어서 많은 사람들이 줄을 서서 기다렸어요.', 'There was|a big sale,|so many people|waited in line', '있었어요|큰 할인 판매가|그래서 많은 사람들이|줄을 서서 기다렸어요'],
+    ["I don't agree with you because your answer looks wrong to me.", '내가 보기에 네 답이 틀린 것 같아서 나는 네 말에 동의하지 않아요.', "I don't agree|with you|because your answer|looks wrong|to me", '나는 동의하지 않아요|네 말에|왜냐하면 네 답이|틀려 보여요|나에게는'],
+    ['If you are sure the story is true, you should show us the photo.', '그 이야기가 사실이라고 확신한다면, 너는 우리에게 그 사진을 보여 줘야 해요.', 'If you are sure|the story is true,|you should show us|the photo', '만약 네가 확신한다면|그 이야기가 사실이라고|너는 우리에게 보여 줘야 해요|그 사진을'],
+    ['The tallest boy in our class hopes to join the team that won.', '우리 반에서 가장 키가 큰 소년은 우승한 그 팀에 들어가기를 바라요.', 'The tallest boy|in our class|hopes to join|the team|that won', '가장 키가 큰 소년은|우리 반에서|함께하기를 바라요|그 팀에|우승한'],
   ],
   // ---------- 11장 · 미래의 하늘 ----------
   11: [
@@ -170,5 +300,18 @@ const LONG_SENTENCES = {
     ['Although the air was cold, we enjoyed the snowy season together.', '공기는 차가웠지만, 우리는 눈 오는 계절을 함께 즐겼어요.', 'Although the air was cold,|we enjoyed|the snowy season|together', '비록 공기가 차가웠지만|우리는 즐겼어요|눈 오는 계절을|함께'],
     ['People who wear a seatbelt are much safer in a car accident.', '안전벨트를 매는 사람들은 자동차 사고에서 훨씬 더 안전해요.', 'People|who wear a seatbelt|are much safer|in a car accident', '사람들은|안전벨트를 매는|훨씬 더 안전해요|자동차 사고에서'],
     ['We have to protect nature because the future of our world depends on it.', '우리 세계의 미래가 자연에 달려 있기 때문에 우리는 자연을 지켜야 해요.', 'We|have to protect nature|because the future|of our world|depends on it', '우리는|자연을 지켜야 해요|왜냐하면 미래가|우리 세계의|그것에 달려 있어요'],
+    // 더한 문장
+    ['My grandmother has a soft voice and a kind smile.', '우리 할머니는 부드러운 목소리와 다정한 미소를 가지고 있어요.', 'My grandmother|has|a soft voice|and a kind smile', '우리 할머니는|가지고 있어요|부드러운 목소리를|그리고 다정한 미소를'],
+    ['Please write your name and address on the first page.', '첫 번째 쪽에 네 이름과 주소를 써 주세요.', 'Please write|your name|and address|on the first page', '써 주세요|네 이름을|그리고 주소를|첫 번째 쪽에'],
+    ['I sneezed three times because of the strong smell of flowers.', '나는 꽃의 강한 냄새 때문에 재채기를 세 번 했어요.', 'I|sneezed three times|because of the strong smell|of flowers', '나는|세 번 재채기했어요|강한 냄새 때문에|꽃의'],
+    ['Turn off the lights when you leave, or you will waste energy.', '나갈 때 불을 꺼요, 그렇지 않으면 에너지를 낭비하게 될 거예요.', 'Turn off the lights|when you leave,|or you will waste|energy', '불을 꺼요|네가 나갈 때|그렇지 않으면 너는 낭비할 거예요|에너지를'],
+    ['The person who comes last in the race also gets a small prize.', '경주에서 마지막으로 들어오는 사람도 작은 상을 받아요.', 'The person|who comes last|in the race|also gets a small prize', '그 사람은|마지막으로 들어오는|경주에서|또한 작은 상을 받아요'],
+    ['It is not safe to swim without a friend in deep water.', '깊은 물에서 친구 없이 수영하는 것은 안전하지 않아요.', 'It is not safe|to swim|without a friend|in deep water', '안전하지 않아요|수영하는 것은|친구 없이|깊은 물에서'],
+    ['Breathe slowly and relax before you read your report to the class.', '반 친구들에게 보고서를 읽기 전에 천천히 숨 쉬고 긴장을 풀어요.', 'Breathe slowly|and relax|before you read your report|to the class', '천천히 숨 쉬어요|그리고 긴장을 풀어요|네가 보고서를 읽기 전에|반 친구들에게'],
+    ['The ice on the road was dangerous, so my dad drove very carefully.', '길 위의 얼음이 위험해서 아빠는 아주 조심스럽게 운전했어요.', 'The ice|on the road|was dangerous,|so my dad drove|very carefully', '그 얼음은|길 위의|위험했어요|그래서 아빠는 운전했어요|아주 조심스럽게'],
+    ['Things made of plastic take hundreds of years to disappear in nature.', '플라스틱으로 만든 물건은 자연에서 사라지는 데 수백 년이 걸려요.', 'Things|made of plastic|take hundreds of years|to disappear|in nature', '물건들은|플라스틱으로 만들어진|수백 년이 걸려요|사라지는 데|자연에서'],
+    ['If you shout in the library, the people around you will not like it.', '도서관에서 소리치면, 네 주변 사람들이 싫어할 거예요.', 'If you shout|in the library,|the people|around you|will not like it', '만약 네가 소리치면|도서관에서|사람들은|네 주변의|그것을 좋아하지 않을 거예요'],
+    ['Which season do you like better, the rainy summer or the snowy winter?', '비 오는 여름과 눈 오는 겨울 중에서 어느 계절을 더 좋아하니?', 'Which season|do you like better,|the rainy summer|or the snowy winter', '어느 계절을|너는 더 좋아하니|비 오는 여름|아니면 눈 오는 겨울'],
+    ["Although our group's plan was simple, the judges said it was the most creative.", '우리 모둠의 계획은 간단했지만, 심사위원들은 그것이 가장 창의적이라고 말했어요.', "Although our group's plan|was simple,|the judges said|it was the most creative", '비록 우리 모둠의 계획은|간단했지만|심사위원들은 말했어요|그것이 가장 창의적이라고'],
   ],
 };
