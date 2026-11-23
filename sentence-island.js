@@ -31,6 +31,9 @@ const css = `
 #sisland .slong:active{transform:translateY(3px);box-shadow:0 3px 0 #3730a3;}
 #sisland .slong small{display:block;font-size:15px;opacity:.95;}
 #sisland .slong.locked{background:#94a3b8;box-shadow:0 6px 0 #64748b;}
+#sisland .skor{border:0;border-radius:20px;padding:12px;color:#fff;font-size:22px;background:linear-gradient(90deg,#10b981,#0d9488);box-shadow:0 6px 0 #115e59;}
+#sisland .skor:active{transform:translateY(3px);box-shadow:0 3px 0 #115e59;}
+#sisland .skor small{display:block;font-size:15px;opacity:.95;}
 #sisland .sinfo{display:flex;gap:12px;}
 #sisland .sinfo button,#sisland .sinfo div{flex:1;border:0;background:#ffffffcc;border-radius:20px;padding:12px 8px;font-size:18px;text-align:center;box-shadow:0 4px 0 rgba(0,0,0,.08);}
 #sisland .sinfo b{display:block;font-size:26px;margin-top:2px;}
@@ -68,6 +71,8 @@ const css = `
 #splay .ck.slot .e{border-bottom:4px solid #c4b5fd;width:2.4em;height:1.2em;}
 #splay .ck.slot .k{color:#a78bfa;}
 #splay .ck.slot.now .e{border-bottom-color:#f59e0b;}
+#splay .ck.kdone .e{border-bottom:4px solid #34d399;width:2.4em;height:1.2em;}
+#splay .ck.kdone .k{color:#047857;font-weight:700;animation:pop .35s;}
 #splay .ck.slot.now .k{color:#6d28d9;font-weight:700;}
 #splay .sko{display:flex;flex-direction:column;align-items:center;gap:2px;}
 #splay .olab{font-size:14px;color:#94a3b8;}
@@ -106,6 +111,7 @@ add('sisland', 'sisl', `<div class="sbar">
     </div>
     <button class="schal" id="siChalBtn">🏆 도전 만들기 <small>영어 순서 뜻 힌트 없이! · 보상 UP</small></button>
     <button class="slong" id="siLongBtn"></button>
+    <button class="skor" id="siOrderBtn">🔀 순서 바꾸기 <small>1장 · 한글로 영어 순서를 먼저 만들고 → 영어 맞추기</small></button>
     <div class="sinfo">
       <button id="siStampBtn">💮 출석 도장판<b id="siStampN"></b></button>
       <div>⭐ 익힌 문장<b id="siLearnN"></b></div>
@@ -172,6 +178,7 @@ $('siTodayBtn').onclick = () => { unlockAudio(); start('daily'); };
 $('siReadBtn').onclick = () => { unlockAudio(); start('read'); };
 $('siMakeBtn').onclick = () => { unlockAudio(); start('make'); };
 $('siChalBtn').onclick = () => { unlockAudio(); start('challenge'); };
+$('siOrderBtn').onclick = () => { unlockAudio(); start('order'); };
 $('siLongBtn').onclick = () => {
   if (!C.longChapters(S).length){ toast('단어섬에서 한 장의 단원을 모두 깨면 그 장의 긴 문장이 열려요! 🔒', 2400); return; }
   unlockAudio(); start('long');
@@ -218,11 +225,12 @@ function next(){
   $('siAfter').style.display = 'none';
   dots();
   show('splay');
-  if (q.t === 'read') readStep(); else makeStart();
+  if (q.t === 'read') readStep(); else if (q.t === 'kmake') kmakeStart(); else makeStart();
 }
 
 // 문장 카드: 덩어리마다 영어(e)와 뜻(k). state(i) → 'done' | 'now' | 'later' | 'slot'
-const hideHint = () => G && G.mode === 'challenge';
+// 빈칸의 영어 순서 뜻을 숨길 때: 🏆 도전 만들기, 🔀 순서 바꾸기 1단계(한글로 직접 순서를 만드는 중)
+const hideHint = () => G && (G.mode === 'challenge' || (G.cur && G.cur.phase === 'ko'));
 function card(top, state){
   const s = G.cur.s, c = $('siCard'); c.innerHTML = '';
   if (top){
@@ -230,20 +238,21 @@ function card(top, state){
     k.innerHTML = '<small class="olab">🇰🇷 우리말 순서</small><span></span>';
     k.querySelector('span').textContent = top; c.appendChild(k);
     const l = document.createElement('small'); l.className = 'olab';
-    l.textContent = hideHint() && state(0) !== 'done' ? '🏆 힌트 없이 영어 순서로 만들어 봐요 ↓' : '🔤 영어 순서로 생각하면 ↓';
+    l.textContent = G.cur.phase === 'ko' ? '🔀 한글 뜻 덩어리를 영어 순서로 놓아 봐요 ↓'
+      : hideHint() && state(0) !== 'done' ? '🏆 힌트 없이 영어 순서로 만들어 봐요 ↓' : '🔤 영어 순서로 생각하면 ↓';
     c.appendChild(l);
   }
   const row = document.createElement('div'); row.className = 'chunks';
   s.blocks.forEach((b, i) => {
     if (i){ const sep = document.createElement('span'); sep.className = 'sep'; sep.textContent = '/'; row.appendChild(sep); }
     const stt = state(i), ck = document.createElement('div');
-    const slot = stt.startsWith('slot');
+    const slot = stt.startsWith('slot') || stt === 'kdone';   // kdone: 한글 뜻만 놓인 칸 (영어는 아직)
     ck.className = 'ck ' + stt;
     ck.innerHTML = `<span class="e"></span><span class="k"></span>`;
     ck.querySelector('.e').textContent = slot ? '' : b;   // 빈칸은 길이로 답이 보이지 않게 같은 크기
     // 만들기 빈칸에는 영어 어순대로 한국어 뜻을 미리 보여 줘요 (이 뜻에 맞는 영어 덩어리를 차례로 고르기)
     // 🏆 도전 만들기는 빈칸 뜻을 숨겨요 (맞힌 칸은 뜻을 보여 줘요)
-    ck.querySelector('.k').textContent = stt === 'done' || (slot && !hideHint()) ? s.gloss[i] : '';
+    ck.querySelector('.k').textContent = stt === 'done' || stt === 'kdone' || (slot && !hideHint()) ? s.gloss[i] : '';
     row.appendChild(ck);
   });
   if (state(s.blocks.length - 1) === 'done'){ const e = document.createElement('span'); e.className = 'end'; e.textContent = END(s); row.appendChild(e); }
@@ -268,6 +277,34 @@ function readStep(){
   });
 }
 
+/* 🔀 순서 바꾸기: 1단계 한글 뜻 덩어리를 영어 순서로 놓기 → 2단계 영어 덩어리 맞추기 */
+function kmakeStart(){
+  const g = G.cur;
+  g.phase = 'ko'; g.korder = C.shuffleBlocks(g.s);
+  kStep();
+}
+function kStep(){
+  const g = G.cur, s = g.s;
+  $('siKind').textContent = '🔀 1단계 · 한글 뜻을 영어 순서대로 눌러요';
+  card(s.ko, i => i < g.k ? 'kdone' : i === g.k ? 'slot now' : 'slot');
+  const o = $('siOpts'); o.innerHTML = '';
+  g.korder.forEach((bi, n) => {
+    const b = document.createElement('button');
+    b.className = 'opt' + (bi < g.k ? ' used' : '') + (bi === g.k && g.slotMiss >= 2 ? ' hint' : '');
+    b.textContent = s.gloss[bi]; b.style.animationDelay = (n * .05) + 's';
+    b.onclick = () => {
+      if (bi === g.k){
+        tone(880, .12, 'triangle'); g.k++; g.slotMiss = 0;
+        if (g.k < s.blocks.length) return kStep();
+        // 한글 영어 순서 완성 → 2단계: 같은 칸에 영어 덩어리 맞추기
+        g.phase = 'en'; g.k = 0; tone(1320, .2, 'triangle', .1);
+        makeStart();
+      } else { g.slotMiss++; wrong(b); if (g.slotMiss >= 2) kStep(); }
+    };
+    o.appendChild(b);
+  });
+}
+
 /* 🧱 만들기: 한국어 문장 보고 영어 덩어리를 순서대로 */
 function makeStart(){
   G.cur.order = C.shuffleBlocks(G.cur.s);
@@ -275,7 +312,8 @@ function makeStart(){
 }
 function makeStep(){
   const g = G.cur, s = g.s;
-  $('siKind').textContent = hideHint() ? '🏆 도전! 뜻 힌트 없이 영어 순서대로' : '🧱 영어 순서대로 덩어리를 눌러요';
+  $('siKind').textContent = G.mode === 'order' ? '🔀 2단계 · 이제 영어 덩어리를 맞춰요'
+    : hideHint() ? '🏆 도전! 뜻 힌트 없이 영어 순서대로' : '🧱 영어 순서대로 덩어리를 눌러요';
   card(s.ko, i => i < g.k ? 'done' : i === g.k ? 'slot now' : 'slot');
   const o = $('siOpts'); o.innerHTML = '';
   g.order.forEach((bi, n) => {
@@ -337,7 +375,7 @@ function finish(){
   }
   touchStreak(); save();
   sfxWin();
-  $('sirTitle').textContent = G.mode === 'daily' ? '📅 오늘의 문장 끝!' : G.mode === 'read' ? '👀 해석하기 끝!' : G.mode === 'challenge' ? '🏆 도전 만들기 끝!' : G.mode === 'long' ? '📜 긴 문장 끝!' : '🧱 만들기 끝!';
+  $('sirTitle').textContent = G.mode === 'daily' ? '📅 오늘의 문장 끝!' : G.mode === 'read' ? '👀 해석하기 끝!' : G.mode === 'challenge' ? '🏆 도전 만들기 끝!' : G.mode === 'long' ? '📜 긴 문장 끝!' : G.mode === 'order' ? '🔀 순서 바꾸기 끝!' : '🧱 만들기 끝!';
   $('sirStars').innerHTML = [0, 1, 2].map(i => `<span>${i < stars ? '⭐' : '☆'}</span>`).join('');
   $('sirStats').innerHTML = `<span class="pill">✨ 한 번에 ${G.list.length - G.unclean}/${G.list.length}</span><span class="pill">🪙 +${G.coins}</span><span class="pill">XP +${G.xp}</span>`;
   $('sirStamp').style.display = stampMsg ? 'block' : 'none';

@@ -199,3 +199,16 @@ test('long choices: 3 meanings, wrong ones from other long sentences when possib
   for (const s of C.LONG_BY_CH[1]) s.blocks.forEach((_, i) => C.choices(s, i).filter(x => x !== s.gloss[i]).forEach(x => { t1++; if (ch1.has(x)) in1++; }));
   assert.ok(in1 / t1 > 0.9, `${in1}/${t1}`);
 });
+
+// ---------- 🔀 순서 바꾸기 (1장) ----------
+test('order mode: chapter 1 only, all kmake problems', () => {
+  const ch1 = new Set(CHAPTERS[0].stages);
+  const fresh = C.pick(C.ensure({stages:{}}), 'order');
+  assert.equal(fresh.length, 6);
+  assert.ok(fresh.every(x => x.t === 'kmake' && x.s.unit === CHAPTERS[0].stages[0]));
+  // 2장만 깼어도 1장 문장 (2장 문장은 안 나와요)
+  const st = {}; CHAPTERS[1].stages.forEach(id => st[id] = {stars:3}); st[2] = {stars:1};
+  const r = C.pick(C.ensure({stages:st}), 'order');
+  assert.ok(r.every(x => ch1.has(x.s.unit)), J(r.map(x => x.s.unit)).join());
+  assert.ok(r.every(x => x.s.unit === 2));
+});

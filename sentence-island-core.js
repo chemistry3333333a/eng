@@ -13,7 +13,9 @@ const SentIsland = (() => {
     make:  Array(ROUND).fill('make'),
     challenge: Array(ROUND).fill('make'),   // 🏆 도전 만들기: 영어 순서 뜻 힌트 없이 (화면에서 숨겨요)
     long:  ['read', 'make', 'read', 'make', 'read', 'make'],   // 📜 긴 문장: 해석 ↔ 만들기 번갈아
+    order: Array(ROUND).fill('kmake'),   // 🔀 순서 바꾸기(1장, 비교용): 한글 뜻을 먼저 영어 순서로 놓고 → 영어 맞추기
   };
+  const ORDER_CHAPTER = 1;   // 🔀 순서 바꾸기는 우선 1장 문장만
   const REWARD = {   // 한 문장 끝낼 때: 한 번에 맞히면 clean, 아니면 retry
     normal:    {clean:{xp:10, coin:1}, retry:{xp:4, coin:0}},
     challenge: {clean:{xp:15, coin:2}, retry:{xp:6, coin:0}},
@@ -66,11 +68,17 @@ const SentIsland = (() => {
     return open.length ? open : UNITS.slice(0, 1);
   }
   const pool = S => openUnits(S).flatMap(id => BY_UNIT[id]);
+  // 🔀 순서 바꾸기: 1장 단원 중 깬 단원 (없으면 1장 첫 단원)
+  function orderPool(S){
+    const ch = CHAPTERS[ORDER_CHAPTER - 1].stages.filter(id => BY_UNIT[id]);
+    const open = ch.filter(id => S.stages && S.stages[id] && S.stages[id].stars > 0);
+    return (open.length ? open : ch.slice(0, 1)).flatMap(id => BY_UNIT[id]);
+  }
 
   // 한 판 문제: 덜 익힌 문장부터 6개, 종류는 mode 에 따라
   function pick(S, mode, rnd = Math.random){
     const L = S.sent ? S.sent.learned : {};
-    const src = mode === 'long' ? longPool(S) : pool(S);
+    const src = mode === 'long' ? longPool(S) : mode === 'order' ? orderPool(S) : pool(S);
     if (!src.length) return [];
     const p = mix(src, rnd).sort((a, b) => (L[a.en] || 0) - (L[b.en] || 0));
     const types = TYPES[mode] || TYPES.daily;
@@ -129,6 +137,6 @@ const SentIsland = (() => {
   }
   const doneToday = (S, today) => !!S.sent && S.sent.daily === today;
 
-  return {ROUND, TYPES, BOARD, reward, overlap, LONG, LONG_BY_CH, longChapters, longPool, UNITS, BY_UNIT, ALL, gloss, ensure, openUnits, pool, pick, choices, shuffleBlocks,
+  return {ROUND, TYPES, BOARD, ORDER_CHAPTER, orderPool, reward, overlap, LONG, LONG_BY_CH, longChapters, longPool, UNITS, BY_UNIT, ALL, gloss, ensure, openUnits, pool, pick, choices, shuffleBlocks,
     stars, learn, learnedCount, finishDaily, board, doneToday};
 })();
