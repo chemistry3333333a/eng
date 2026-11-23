@@ -1,20 +1,37 @@
 /* =====================================================================
    워드 아일랜드 · 수학 섬 (섬 고르기, 수학 지도, 한 판, 결과)
-   - section#island, section#mmap 과 영어 지도의 "🔢 수학 섬" 버튼을 스스로 주입해요 (boss.js · shop.js 와 같은 방식)
+   - section#island(메인 화면: 영어 단어섬 · 영어 문장섬 · 수학섬 고르기), section#mmap 과
+     영어 단어섬 지도의 "🏝️ 섬 고르기" 버튼을 스스로 주입해요 (boss.js · shop.js 와 같은 방식)
    - section#mgame (한 판: 문제 칸, 몬스터, 틀리면 #mhint 에 힌트), section#mresult (결과)
    - 수학은 S.math.* 만 써요 (S.session·S.coins·S.stages 는 안 건드려요). xp·streak·avatar 는 같이 써요
    ===================================================================== */
 (() => {
 const css = `
-#island{align-items:center;justify-content:center;gap:18px;}
-#island h2{margin:0;font-size:32px;text-align:center;}
+#island{align-items:center;justify-content:center;justify-content:safe center;gap:18px;overflow-y:auto;padding-top:max(84px,calc(env(safe-area-inset-top) + 72px));}
+#island .islbar{position:absolute;top:max(16px,env(safe-area-inset-top));left:max(16px,env(safe-area-inset-left));right:max(16px,env(safe-area-inset-right));display:flex;align-items:center;gap:10px;}
+#island .islbar .who{flex:1;display:flex;align-items:center;gap:8px;font-size:22px;min-width:0;}
+#island .islbar .pill{font-size:18px;}
+#island .logo{font-size:clamp(36px,7vw,64px);}
+#island h2{margin:0;font-size:clamp(22px,4vw,30px);text-align:center;color:#0c4a6e;}
 #island .pick{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;}
-#island .mode{width:210px;border:0;font:inherit;border-radius:22px;padding:22px 12px;text-align:center;font-weight:800;font-size:26px;color:#fff;box-shadow:0 6px 0 rgba(0,0,0,.2);cursor:pointer;}
+#island .mode{position:relative;width:210px;border:0;font:inherit;border-radius:22px;padding:22px 12px;text-align:center;font-weight:800;font-size:26px;color:#fff;box-shadow:0 6px 0 rgba(0,0,0,.2);cursor:pointer;}
 #island .mode:active{transform:translateY(3px);box-shadow:0 3px 0 rgba(0,0,0,.2);}
 #island .mode .big{font-size:64px;display:block;line-height:1.1;}
 #island .mode small{display:block;font-weight:600;font-size:16px;margin-top:8px;}
-#island .mode.eng{background:#3a9bf0;} #island .mode.math{background:#f08a3a;}
-#island .note{font-weight:700;color:#475569;}
+#island .mode.eng{background:#3a9bf0;} #island .mode.sent{background:#8b5cf6;} #island .mode.math{background:#f08a3a;}
+#island .mode .badge{position:absolute;top:-10px;right:-6px;background:var(--bad);color:#fff;font-size:15px;padding:4px 10px;border-radius:12px;}
+#island .mode .badge.newb{background:#22c55e;}
+@media (max-width:520px){   /* 폰 세로: 카드를 가로로 길게, 그림은 왼쪽에 */
+  #island .pick{flex-direction:column;width:min(100%,340px);gap:14px;}
+  #island .mode{width:100%;display:grid;grid-template-columns:auto 1fr;align-items:center;column-gap:14px;text-align:left;padding:14px 18px;}
+  #island .mode .big{grid-row:1 / 3;font-size:52px;}
+  #island .mode small{margin-top:2px;}
+}
+@media (max-height:620px){
+  #island .logo{display:none;}
+  #island .mode{padding:14px 10px;width:180px;}
+  #island .mode .big{font-size:46px;}
+}
 #mgame{gap:8px;}
 #mgame .mq{align-self:center;background:#fff;border-radius:22px;padding:10px 26px;font-size:clamp(30px,7vw,54px);font-weight:800;
   line-height:1.4;text-align:center;box-shadow:0 5px 0 rgba(0,0,0,.1);max-width:100%;box-sizing:border-box;}
@@ -52,12 +69,18 @@ const st = document.createElement('style'); st.textContent = css; document.head.
 
 const isl = document.createElement('section');
 isl.id = 'island'; isl.className = 'screen';
-isl.innerHTML = `<h2 id="islTitle"></h2>
+isl.innerHTML = `<div class="islbar">
+    <div class="who"><span id="islWhoAv" style="cursor:pointer"></span><span id="islWho"></span></div>
+    <div class="pill" id="islStreak"></div>
+    <button class="icon" id="islSet" aria-label="설정">⚙️</button>
+  </div>
+  <h1 class="logo">🏝️ 워드 아일랜드</h1>
+  <h2 id="islTitle"></h2>
   <div class="pick">
     <button class="mode eng" id="islEng"></button>
+    <button class="mode sent" id="islSent"></button>
     <button class="mode math" id="islMath"></button>
-  </div>
-  <div class="note">⬅️ 지도에서도 언제든 바꿀 수 있어요</div>`;
+  </div>`;
 document.body.appendChild(isl);
 
 const mm = document.createElement('section');
@@ -70,7 +93,7 @@ mm.innerHTML = `<div class="mapbar">
   </div>
   <div class="stages" id="mStageList"></div>
   <div class="mapfoot">
-    <button class="btn blue small" id="mEngBtn">🔤 영어 섬</button>
+    <button class="btn blue small" id="mHomeBtn">🏝️ 섬 고르기</button>
     <button class="btn small" id="mShopBtn" style="background:#ec4899;box-shadow:0 6px 0 #be185d">🛍️ 상점</button>
     <button class="btn gray small" id="mSetBtn">⚙️ 설정·백업</button>
   </div>`;
@@ -107,37 +130,50 @@ mr.innerHTML = `<div class="panel">
   </div>`;
 document.body.appendChild(mr);
 
-// 영어 지도 하단 맨 앞에 수학 섬 버튼
-const toMath = document.createElement('button');
-toMath.className = 'btn small'; toMath.id = 'toMathBtn'; toMath.textContent = '🔢 수학 섬';
-toMath.style.cssText = 'background:#f08a3a;box-shadow:0 6px 0 #c2410c';
-document.querySelector('#map .mapfoot').prepend(toMath);
+// 영어 단어섬 지도 하단 맨 앞에 메인(섬 고르기)으로 돌아가는 버튼
+const toHome = document.createElement('button');
+toHome.className = 'btn small'; toHome.id = 'toHomeBtn'; toHome.textContent = '🏝️ 섬 고르기';
+toHome.style.cssText = 'background:#0ea5e9;box-shadow:0 6px 0 #0369a1';
+document.querySelector('#map .mapfoot').prepend(toHome);
 
 const seenWords = () => Object.keys(S.words).filter(w => S.words[w] && S.words[w].seen > 0).length;
 
 function goEng(){
+  unlockAudio();
   S.mode = 'eng'; save();
   if (S.session) resumeGame(); else renderMap();
   if (!S.session && !S.xp && !Object.keys(S.stages).length) setTimeout(() => speak("Hello! Let's catch monsters!"), 300);   // 처음 영어 섬에 올 때만
 }
 function goMath(){
+  unlockAudio();
   S.mode = 'math'; save();
   map();
 }
 
 // 받침 있으면 아, 없으면(또는 한글 아님) 야
 const hasFinal = n => { const c = (n || '').slice(-1).charCodeAt(0) - 0xAC00; return c >= 0 && c <= 11171 && c % 28 !== 0; };
+// 메인 화면: 로그인하면 바로 여기로 와서 섬을 골라 들어가요. 각 섬 지도의 "🏝️ 섬 고르기" 로 돌아와요
+const doing = on => on ? '<span class="badge">하던 중</span>' : '';
 function pick(){
-  MathStages.ensure(S);
-  $('islTitle').textContent = `🧒 ${S.name}${hasFinal(S.name) ? '아' : '야'}, 오늘은 뭘 할까?`;
-  $('islEng').innerHTML = `<span class="big">🔤</span>영어 섬<small>🪙 ${S.coins} · 단어 ${seenWords()}개</small>`;
-  $('islMath').innerHTML = `<span class="big">🔢</span>수학 섬<small>💎 ${S.math.coins} · 스테이지 ${MATH_STAGES.filter(s => (S.math.stages[s.id] || {}).stars > 0).length}/${MATH_STAGES.length}</small>`;
+  MathStages.ensure(S); touchStreak();
+  Avatar.render($('islWhoAv'), {size:'s', bg:true, sleepy:true});
+  $('islWhoAv').onclick = () => window.Shop && Shop.open('body');
+  $('islWho').textContent = `${S.name} · Lv.${level()}`;
+  $('islStreak').textContent = `🔥 ${S.streak.n}일`;
+  $('islTitle').textContent = `🧒 ${S.name}${hasFinal(S.name) ? '아' : '야'}, 오늘은 어느 섬에 갈까?`;
+  $('islEng').innerHTML = `${doing(S.session)}<span class="big">🔤</span>영어 단어섬<small>🪙 ${S.coins} · 단어 ${seenWords()}개</small>`;
+  SentIsland.ensure(S);
+  const sb = SentIsland.board(S, today());
+  $('islSent').innerHTML = `${SentIsland.doneToday(S, today()) ? '' : '<span class="badge newb">📅 오늘</span>'}<span class="big">💬</span>영어 문장섬<small>💮 ${sb.on}/${sb.size} · 문장 ${SentIsland.learnedCount(S)}개</small>`;
+  $('islMath').innerHTML = `${doing(S.math.session)}<span class="big">🔢</span>수학섬<small>💎 ${S.math.coins} · 스테이지 ${MATH_STAGES.filter(s => (S.math.stages[s.id] || {}).stars > 0).length}/${MATH_STAGES.length}</small>`;
   show('island');
 }
 $('islEng').onclick = goEng;
+$('islSent').onclick = () => { unlockAudio(); window.SentenceIsland && SentenceIsland.open(); };
 $('islMath').onclick = goMath;
-$('toMathBtn').onclick = goMath;
-$('mEngBtn').onclick = goEng;
+$('islSet').onclick = () => $('setBtn').click();
+$('toHomeBtn').onclick = pick;
+$('mHomeBtn').onclick = pick;
 $('mShopBtn').onclick = () => window.Shop && Shop.open(undefined, 'math');
 $('mSetBtn').onclick = () => $('setBtn').click();
 
