@@ -2,7 +2,7 @@ const test = require('node:test'), assert = require('node:assert/strict');
 const {load} = require('./load');
 const vm = require('vm');
 
-const ctx = load(['words.js', 'sentences.js', 'sentence-island-data.js', 'sentence-island-core.js']);
+const ctx = load(['words.js', 'sentences.js', 'sentence-island-data.js', 'sentence-island-long.js', 'sentence-island-core.js']);
 const C = vm.runInContext('SentIsland', ctx);
 const GLOSS = vm.runInContext('SENT_GLOSS', ctx);
 const STAGE_SENTENCES = vm.runInContext('STAGE_SENTENCES', ctx);
@@ -132,4 +132,70 @@ test('daily stamp: once a day, full board every 7', () => {
   // 하루 빠져도 판은 이어져요
   C.finishDaily(S, 'd10');
   assert.deepEqual(J(C.board(S, 'd10')), {on:1, size:7, total:8, full:1});
+});
+
+// ---------- 📜 긴 문장 ----------
+const LONG = vm.runInContext('LONG_SENTENCES', ctx);
+const SHORT = new Set(Object.values(STAGE_SENTENCES).flat().map(x => x.en));
+
+test('long sentences: 12 per chapter, well-formed', () => {
+  assert.equal(Object.keys(LONG).length, CHAPTERS.length);
+  const seen = new Set();
+  for (const c of Object.keys(LONG)){
+    assert.equal(LONG[c].length, 12, `chapter ${c}`);
+    for (const [en, ko, b, g] of LONG[c]){
+      const blocks = b.split('|'), gloss = g.split('|'), body = en.replace(/[.!?]$/, '');
+      assert.match(en, /[.!?]$/, en);
+      assert.equal(blocks.join(' '), body, en);
+      const wc = body.split(/\s+/).length;
+      assert.ok(wc >= 8 && wc <= 14, `${en}: ${wc} words`);
+      assert.ok(blocks.length >= 4 && blocks.length <= 7, `${en}: ${blocks.length} blocks`);
+      assert.equal(new Set(blocks.map(x => x.toLowerCase())).size, blocks.length, `${en}: blocks differ`);
+      assert.equal(gloss.length, blocks.length, `${en}: one meaning per block`);
+      assert.ok(ko.trim() && gloss.every(x => x.trim()), en);
+      assert.ok(!seen.has(en) && !SHORT.has(en), `${en}: not duplicated`); seen.add(en);
+    }
+  }
+  assert.equal(C.LONG.length, 12 * CHAPTERS.length);
+});
+
+test('long sentences open per cleared chapter', () => {
+  assert.deepEqual(J(C.longChapters({stages:{}})), []);
+  const all1 = {}; CHAPTERS[0].stages.forEach(id => all1[id] = {stars:1});
+  assert.deepEqual(J(C.longChapters({stages:all1})), [1]);
+  const most = {...all1}; delete most[CHAPTERS[0].stages[3]];
+  assert.deepEqual(J(C.longChapters({stages:most})), []);
+  assert.equal(C.longChapters({stages:{}, settings:{openAll:true}}).length, CHAPTERS.length);
+});
+
+test('long round: empty when locked, otherwise 6 long problems alternating', () => {
+  assert.equal(C.pick(C.ensure({stages:{}}), 'long').length, 0);
+  const st = {}; CHAPTERS[1].stages.forEach(id => st[id] = {stars:2});
+  const r = C.pick(C.ensure({stages:st}), 'long');
+  assert.equal(r.length, 6);
+  assert.deepEqual(J(r.map(x => x.t)), ['read','make','read','make','read','make']);
+  assert.ok(r.every(x => x.s.long && x.s.ch === 2));
+  assert.ok(C.reward('long', true).xp > C.reward('daily', true).xp);
+});
+
+test('long choices: 3 meanings, wrong ones from other long sentences when possible', () => {
+  const longGloss = new Set(C.LONG.flatMap(o => o.gloss));
+  for (const s of C.LONG){
+    s.blocks.forEach((_, i) => {
+      const c = C.choices(s, i);
+      assert.equal(c.length, 3, `${s.en} #${i}`);
+      assert.equal(new Set(c).size, 3);
+      assert.ok(c.includes(s.gloss[i]));
+      assert.ok(c.filter(x => x !== s.gloss[i]).every(x => !C.overlap(x, s.gloss[i])));
+    });
+  }
+  // 대부분의 오답은 긴 문장에서 와요
+  let fromLong = 0, total = 0;
+  for (const s of C.LONG.slice(0, 30)) s.blocks.forEach((_, i) => C.choices(s, i).filter(x => x !== s.gloss[i]).forEach(x => { total++; if (longGloss.has(x)) fromLong++; }));
+  assert.ok(fromLong / total > 0.9, `${fromLong}/${total}`);
+  // 1장 긴 문장의 오답은 1장 긴 문장에서 와요 (모르는 어려운 말이 안 나오게)
+  const ch1 = new Set(C.LONG_BY_CH[1].flatMap(o => o.gloss));
+  let in1 = 0, t1 = 0;
+  for (const s of C.LONG_BY_CH[1]) s.blocks.forEach((_, i) => C.choices(s, i).filter(x => x !== s.gloss[i]).forEach(x => { t1++; if (ch1.has(x)) in1++; }));
+  assert.ok(in1 / t1 > 0.9, `${in1}/${t1}`);
 });

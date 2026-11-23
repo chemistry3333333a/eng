@@ -27,6 +27,10 @@ const css = `
 #sisland .schal{border:0;border-radius:20px;padding:12px;color:#fff;font-size:22px;background:linear-gradient(90deg,#e11d48,#f59e0b);box-shadow:0 6px 0 #9f1239;}
 #sisland .schal:active{transform:translateY(3px);box-shadow:0 3px 0 #9f1239;}
 #sisland .schal small{display:block;font-size:15px;opacity:.95;}
+#sisland .slong{border:0;border-radius:20px;padding:12px;color:#fff;font-size:22px;background:linear-gradient(90deg,#0ea5e9,#6366f1);box-shadow:0 6px 0 #3730a3;}
+#sisland .slong:active{transform:translateY(3px);box-shadow:0 3px 0 #3730a3;}
+#sisland .slong small{display:block;font-size:15px;opacity:.95;}
+#sisland .slong.locked{background:#94a3b8;box-shadow:0 6px 0 #64748b;}
 #sisland .sinfo{display:flex;gap:12px;}
 #sisland .sinfo button,#sisland .sinfo div{flex:1;border:0;background:#ffffffcc;border-radius:20px;padding:12px 8px;font-size:18px;text-align:center;box-shadow:0 4px 0 rgba(0,0,0,.08);}
 #sisland .sinfo b{display:block;font-size:26px;margin-top:2px;}
@@ -101,6 +105,7 @@ add('sisland', 'sisl', `<div class="sbar">
       <button class="smode make" id="siMakeBtn"><span class="big">🧱</span>만들기<small>뜻 → 영어 순서로</small></button>
     </div>
     <button class="schal" id="siChalBtn">🏆 도전 만들기 <small>영어 순서 뜻 힌트 없이! · 보상 UP</small></button>
+    <button class="slong" id="siLongBtn"></button>
     <div class="sinfo">
       <button id="siStampBtn">💮 출석 도장판<b id="siStampN"></b></button>
       <div>⭐ 익힌 문장<b id="siLearnN"></b></div>
@@ -157,6 +162,9 @@ function open(){
   $('siTodayBtn').textContent = done ? '▶ 한 판 더' : '▶ 시작하기';
   $('siStampN').textContent = `${b.on} / ${b.size}`;
   $('siLearnN').textContent = `${C.learnedCount(S)}개`;
+  const lc = C.longChapters(S), lt = Object.keys(C.LONG_BY_CH).length;
+  $('siLongBtn').className = 'slong' + (lc.length ? '' : ' locked');
+  $('siLongBtn').innerHTML = `${lc.length ? '📜' : '🔒'} 긴 문장 <small>${lc.length ? `열린 장 ${lc.length} / ${lt} · 끊어 읽기 연습` : '단어섬에서 한 장의 단원을 모두 깨면 열려요'}</small>`;
   show('sisland');
 }
 $('siHome').onclick = () => MathGame.pick();
@@ -164,6 +172,10 @@ $('siTodayBtn').onclick = () => { unlockAudio(); start('daily'); };
 $('siReadBtn').onclick = () => { unlockAudio(); start('read'); };
 $('siMakeBtn').onclick = () => { unlockAudio(); start('make'); };
 $('siChalBtn').onclick = () => { unlockAudio(); start('challenge'); };
+$('siLongBtn').onclick = () => {
+  if (!C.longChapters(S).length){ toast('단어섬에서 한 장의 단원을 모두 깨면 그 장의 긴 문장이 열려요! 🔒', 2400); return; }
+  unlockAudio(); start('long');
+};
 $('siStampBtn').onclick = () => stamps();
 
 /* ---------- 출석 도장판 ---------- */
@@ -325,7 +337,7 @@ function finish(){
   }
   touchStreak(); save();
   sfxWin();
-  $('sirTitle').textContent = G.mode === 'daily' ? '📅 오늘의 문장 끝!' : G.mode === 'read' ? '👀 해석하기 끝!' : G.mode === 'challenge' ? '🏆 도전 만들기 끝!' : '🧱 만들기 끝!';
+  $('sirTitle').textContent = G.mode === 'daily' ? '📅 오늘의 문장 끝!' : G.mode === 'read' ? '👀 해석하기 끝!' : G.mode === 'challenge' ? '🏆 도전 만들기 끝!' : G.mode === 'long' ? '📜 긴 문장 끝!' : '🧱 만들기 끝!';
   $('sirStars').innerHTML = [0, 1, 2].map(i => `<span>${i < stars ? '⭐' : '☆'}</span>`).join('');
   $('sirStats').innerHTML = `<span class="pill">✨ 한 번에 ${G.list.length - G.unclean}/${G.list.length}</span><span class="pill">🪙 +${G.coins}</span><span class="pill">XP +${G.xp}</span>`;
   $('sirStamp').style.display = stampMsg ? 'block' : 'none';

@@ -2,6 +2,7 @@
    워드 아일랜드 · 영어 문장섬 계산 (화면 없이 쓰는 부분, 테스트에서도 불러요)
    - 문장: sentences.js 의 STAGE_SENTENCES 중 SENT_GLOSS(덩어리 뜻)가 있는 것만 써요
    - 수준: 단어섬에서 깬 단원(별 1개 이상)의 문장이 나와요. 아직 깬 단원이 없으면 첫 단원 문장으로 시작해요
+   - 📜 긴 문장: sentence-island-long.js 의 LONG_SENTENCES. 단어섬에서 그 장의 단원을 모두 깨면 그 장의 긴 문장이 열려요
    - 저장: S.sent = {stamps, last, daily, learned:{영어 문장: 한 번에 맞힌 횟수}, played}
    ===================================================================== */
 const SentIsland = (() => {
@@ -11,10 +12,12 @@ const SentIsland = (() => {
     read:  Array(ROUND).fill('read'),
     make:  Array(ROUND).fill('make'),
     challenge: Array(ROUND).fill('make'),   // 🏆 도전 만들기: 영어 순서 뜻 힌트 없이 (화면에서 숨겨요)
+    long:  ['read', 'make', 'read', 'make', 'read', 'make'],   // 📜 긴 문장: 해석 ↔ 만들기 번갈아
   };
   const REWARD = {   // 한 문장 끝낼 때: 한 번에 맞히면 clean, 아니면 retry
     normal:    {clean:{xp:10, coin:1}, retry:{xp:4, coin:0}},
     challenge: {clean:{xp:15, coin:2}, retry:{xp:6, coin:0}},
+    long:      {clean:{xp:15, coin:2}, retry:{xp:6, coin:0}},
   };
   const reward = (mode, clean) => (REWARD[mode] || REWARD.normal)[clean ? 'clean' : 'retry'];
   const BOARD = 7;   // 도장판 한 판 칸 수
@@ -33,6 +36,19 @@ const SentIsland = (() => {
     BY_UNIT[id] = src.map(s => ({unit:id, w:s.w, en:s.en, ko:s.ko, blocks:s.blocks, gloss:gloss(s.en)}));
   }));
   const ALL = UNITS.flatMap(id => BY_UNIT[id]);
+
+  // 📜 긴 문장: 장 번호(1~) → [영어, 한국어, 블록, 뜻]
+  const LONG_RAW = typeof LONG_SENTENCES !== 'undefined' ? LONG_SENTENCES : {};
+  const LONG_BY_CH = {};
+  Object.keys(LONG_RAW).forEach(c => {
+    LONG_BY_CH[c] = LONG_RAW[c].map(([en, ko, b, g]) => ({unit:'L' + c, ch:Number(c), long:true, en, ko, blocks:b.split('|'), gloss:g.split('|')}));
+  });
+  const LONG = Object.keys(LONG_BY_CH).sort((a, b) => a - b).flatMap(c => LONG_BY_CH[c]);
+  // 그 장의 단원을 단어섬에서 모두 깼으면(또는 설정에서 모두 열기) 그 장의 긴 문장이 열려요
+  const chapterCleared = (S, c) => !!(S.settings && S.settings.openAll) ||
+    CHAPTERS[c - 1].stages.every(id => S.stages && S.stages[id] && S.stages[id].stars > 0);
+  const longChapters = S => Object.keys(LONG_BY_CH).map(Number).sort((a, b) => a - b).filter(c => chapterCleared(S, c));
+  const longPool = S => longChapters(S).flatMap(c => LONG_BY_CH[c]);
 
   function ensure(S){
     const d = S.sent || (S.sent = {});
@@ -54,7 +70,9 @@ const SentIsland = (() => {
   // 한 판 문제: 덜 익힌 문장부터 6개, 종류는 mode 에 따라
   function pick(S, mode, rnd = Math.random){
     const L = S.sent ? S.sent.learned : {};
-    const p = mix(pool(S), rnd).sort((a, b) => (L[a.en] || 0) - (L[b.en] || 0));
+    const src = mode === 'long' ? longPool(S) : pool(S);
+    if (!src.length) return [];
+    const p = mix(src, rnd).sort((a, b) => (L[a.en] || 0) - (L[b.en] || 0));
     const types = TYPES[mode] || TYPES.daily;
     return types.map((t, i) => ({t, s:p[i % p.length]}));
   }
@@ -71,8 +89,13 @@ const SentIsland = (() => {
     const ok = (o, j) => o.blocks[j].toLowerCase() !== en && o.gloss[j] !== right && !close.includes(o.gloss[j]) && !overlap(o.gloss[j], right);
     const seen = new Set([right]), out = [];
     const take = list => { for (const [o, j] of mix(list, rnd)){ if (out.length >= n - 1) break; const g = o.gloss[j]; if (!seen.has(g) && ok(o, j)){ seen.add(g); out.push(g); } } };
-    take(ALL.filter(o => o.blocks.length > i).map(o => [o, i]));                       // 같은 자리
-    if (out.length < n - 1) take(ALL.flatMap(o => o.blocks.map((_, j) => [o, j])));     // 모자라면 아무 자리
+    // 긴 문장은 긴 문장끼리(덩어리 길이로 답이 티 나지 않게), 모자라면 짧은 문장에서
+    // 긴 문장 오답은 같은 장 이하(아이가 아는 말)에서 먼저 골라요
+    const srcs = s.long ? [LONG.filter(o => o.ch <= s.ch), LONG, ALL] : [ALL];
+    for (const src of srcs){
+      if (out.length < n - 1) take(src.filter(o => o.blocks.length > i).map(o => [o, i]));   // 같은 자리
+      if (out.length < n - 1) take(src.flatMap(o => o.blocks.map((_, j) => [o, j])));       // 모자라면 아무 자리
+    }
     return mix([right, ...out], rnd);
   }
 
@@ -106,6 +129,6 @@ const SentIsland = (() => {
   }
   const doneToday = (S, today) => !!S.sent && S.sent.daily === today;
 
-  return {ROUND, TYPES, BOARD, reward, overlap, UNITS, BY_UNIT, ALL, gloss, ensure, openUnits, pool, pick, choices, shuffleBlocks,
+  return {ROUND, TYPES, BOARD, reward, overlap, LONG, LONG_BY_CH, longChapters, longPool, UNITS, BY_UNIT, ALL, gloss, ensure, openUnits, pool, pick, choices, shuffleBlocks,
     stars, learn, learnedCount, finishDaily, board, doneToday};
 })();
