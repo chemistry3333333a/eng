@@ -34,6 +34,10 @@ const css = `
 #sisland .skor{border:0;border-radius:20px;padding:12px;color:#fff;font-size:22px;background:linear-gradient(90deg,#10b981,#0d9488);box-shadow:0 6px 0 #115e59;}
 #sisland .skor:active{transform:translateY(3px);box-shadow:0 3px 0 #115e59;}
 #sisland .skor small{display:block;font-size:15px;opacity:.95;}
+#sisland .korrow{display:flex;gap:12px;}
+#sisland .korrow .skor{flex:1;}
+#sisland .skor.long{background:linear-gradient(90deg,#0d9488,#4f46e5);}
+#sisland .skor.locked{background:#94a3b8;box-shadow:0 6px 0 #64748b;}
 #sisland .sinfo{display:flex;gap:12px;}
 #sisland .sinfo button,#sisland .sinfo div{flex:1;border:0;background:#ffffffcc;border-radius:20px;padding:12px 8px;font-size:18px;text-align:center;box-shadow:0 4px 0 rgba(0,0,0,.08);}
 #sisland .sinfo b{display:block;font-size:26px;margin-top:2px;}
@@ -111,7 +115,10 @@ add('sisland', 'sisl', `<div class="sbar">
     </div>
     <button class="schal" id="siChalBtn">🏆 도전 만들기 <small>영어 순서 뜻 힌트 없이! · 보상 UP</small></button>
     <button class="slong" id="siLongBtn"></button>
-    <button class="skor" id="siOrderBtn">🔀 순서 바꾸기 <small>1장 · 한글로 영어 순서를 먼저 만들고 → 영어 맞추기</small></button>
+    <div class="korrow">
+      <button class="skor" id="siOrderBtn">🔀 순서 바꾸기 <small>짧은 문장 · 1장</small></button>
+      <button class="skor long" id="siOrderLongBtn"></button>
+    </div>
     <div class="sinfo">
       <button id="siStampBtn">💮 출석 도장판<b id="siStampN"></b></button>
       <div>⭐ 익힌 문장<b id="siLearnN"></b></div>
@@ -170,6 +177,8 @@ function open(){
   $('siLearnN').textContent = `${C.learnedCount(S)}개`;
   const lc = C.longChapters(S), lt = Object.keys(C.LONG_BY_CH).length;
   $('siLongBtn').className = 'slong' + (lc.length ? '' : ' locked');
+  $('siOrderLongBtn').className = 'skor long' + (lc.length ? '' : ' locked');
+  $('siOrderLongBtn').innerHTML = `${lc.length ? '🔀' : '🔒'} 순서 바꾸기 <small>긴 문장${lc.length ? ` · 열린 장 ${lc.length}` : ' · 잠김'}</small>`;
   $('siLongBtn').innerHTML = `${lc.length ? '📜' : '🔒'} 긴 문장 <small>${lc.length ? `열린 장 ${lc.length} / ${lt} · 끊어 읽기 연습` : '단어섬에서 한 장의 단원을 모두 깨면 열려요'}</small>`;
   show('sisland');
 }
@@ -179,6 +188,10 @@ $('siReadBtn').onclick = () => { unlockAudio(); start('read'); };
 $('siMakeBtn').onclick = () => { unlockAudio(); start('make'); };
 $('siChalBtn').onclick = () => { unlockAudio(); start('challenge'); };
 $('siOrderBtn').onclick = () => { unlockAudio(); start('order'); };
+$('siOrderLongBtn').onclick = () => {
+  if (!C.longChapters(S).length){ toast('단어섬에서 한 장의 단원을 모두 깨면 그 장의 긴 문장이 열려요! 🔒', 2400); return; }
+  unlockAudio(); start('orderLong');
+};
 $('siLongBtn').onclick = () => {
   if (!C.longChapters(S).length){ toast('단어섬에서 한 장의 단원을 모두 깨면 그 장의 긴 문장이 열려요! 🔒', 2400); return; }
   unlockAudio(); start('long');
@@ -312,7 +325,7 @@ function makeStart(){
 }
 function makeStep(){
   const g = G.cur, s = g.s;
-  $('siKind').textContent = G.mode === 'order' ? '🔀 2단계 · 이제 영어 덩어리를 맞춰요'
+  $('siKind').textContent = G.mode === 'order' || G.mode === 'orderLong' ? '🔀 2단계 · 이제 영어 덩어리를 맞춰요'
     : hideHint() ? '🏆 도전! 뜻 힌트 없이 영어 순서대로' : '🧱 영어 순서대로 덩어리를 눌러요';
   card(s.ko, i => i < g.k ? 'done' : i === g.k ? 'slot now' : 'slot');
   const o = $('siOpts'); o.innerHTML = '';
@@ -375,7 +388,7 @@ function finish(){
   }
   touchStreak(); save();
   sfxWin();
-  $('sirTitle').textContent = G.mode === 'daily' ? '📅 오늘의 문장 끝!' : G.mode === 'read' ? '👀 해석하기 끝!' : G.mode === 'challenge' ? '🏆 도전 만들기 끝!' : G.mode === 'long' ? '📜 긴 문장 끝!' : G.mode === 'order' ? '🔀 순서 바꾸기 끝!' : '🧱 만들기 끝!';
+  $('sirTitle').textContent = G.mode === 'daily' ? '📅 오늘의 문장 끝!' : G.mode === 'read' ? '👀 해석하기 끝!' : G.mode === 'challenge' ? '🏆 도전 만들기 끝!' : G.mode === 'long' ? '📜 긴 문장 끝!' : G.mode === 'order' ? '🔀 순서 바꾸기 끝!' : G.mode === 'orderLong' ? '🔀 긴 문장 순서 바꾸기 끝!' : '🧱 만들기 끝!';
   $('sirStars').innerHTML = [0, 1, 2].map(i => `<span>${i < stars ? '⭐' : '☆'}</span>`).join('');
   $('sirStats').innerHTML = `<span class="pill">✨ 한 번에 ${G.list.length - G.unclean}/${G.list.length}</span><span class="pill">🪙 +${G.coins}</span><span class="pill">XP +${G.xp}</span>`;
   $('sirStamp').style.display = stampMsg ? 'block' : 'none';

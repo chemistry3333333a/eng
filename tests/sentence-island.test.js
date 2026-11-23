@@ -212,3 +212,12 @@ test('order mode: chapter 1 only, all kmake problems', () => {
   assert.ok(r.every(x => ch1.has(x.s.unit)), J(r.map(x => x.s.unit)).join());
   assert.ok(r.every(x => x.s.unit === 2));
 });
+
+test('orderLong mode: long sentences of cleared chapters, all kmake', () => {
+  assert.equal(C.pick(C.ensure({stages:{}}), 'orderLong').length, 0);
+  const st = {}; CHAPTERS[0].stages.forEach(id => st[id] = {stars:1});
+  const r = C.pick(C.ensure({stages:st}), 'orderLong');
+  assert.equal(r.length, 6);
+  assert.ok(r.every(x => x.t === 'kmake' && x.s.long && x.s.ch === 1));
+  assert.deepEqual(J(C.reward('orderLong', true)), J(C.reward('long', true)));
+});
